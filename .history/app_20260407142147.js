@@ -37,10 +37,6 @@ document.getElementById("btnOilExport").addEventListener("click", function () {
     updateDisplay();
 });
 
-document.getElementById("panelCloseBtn").addEventListener("click", function () {
-    hideCountryInfoPanel();
-});
-
 // ==================== 图例 ====================
 const legend = document.getElementById("legend");
 const religionLegend = `

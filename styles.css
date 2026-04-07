@@ -265,6 +265,27 @@ header h1 {
     color: #8fa3bf;
 }
 
+.panel-close-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #8fa3bf;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.panel-close-btn:hover {
+    background: rgba(239, 68, 68, 0.6);
+    color: #fff;
+}
+
 .panel-section {
     margin-bottom: 14px;
 }
@@ -289,6 +310,17 @@ header h1 {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.panel-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.panel-oil {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 12px;
+    font-size: 12px;
 }
 
 .panel-label {
@@ -342,6 +374,29 @@ header h1 {
 
 .enemies-value {
     color: #ef4444;
+}
+
+.enemy-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 3px;
+}
+
+.enemy-item:last-child {
+    margin-bottom: 0;
+}
+
+.enemy-name {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.enemy-reason {
+    color: #9ca3af;
+    font-size: 10px;
+    margin-left: 4px;
 }
 
 .panel-charts {

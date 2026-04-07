@@ -60,20 +60,56 @@ function updateCountryInfoPanel(countryName) {
         </div>
     `;
 
+    // 渲染敌对国家及其原因
+    const parseCountries = (str) => {
+        if (!str) return [];
+        return str.split(/[、,，]/).map(s => s.trim()).filter(s => s);
+    };
+
+    const enemiesList = parseCountries(details.enemies);
+    let enemiesHtml = '';
+    enemiesList.forEach(enemy => {
+        const reason = details.enemyReasons ? details.enemyReasons[enemy] : '';
+        if (reason) {
+            enemiesHtml += `<div class="enemy-item"><span class="enemy-name">${getCountryFlag(enemy)} ${enemy}</span><span class="enemy-reason">${reason}</span></div>`;
+        } else {
+            enemiesHtml += `<div class="enemy-item"><span class="enemy-name">${getCountryFlag(enemy)} ${enemy}</span></div>`;
+        }
+    });
+
     panelRelations.innerHTML = `
         <div class="relation-row">
             <div class="relation-label allies">🟢 盟友</div>
             <div class="relation-value allies-value">${formatCountriesWithFlags(details.allies)}</div>
         </div>
-        <div class="relation-row">
+        <div class="relation-row enemies-row">
             <div class="relation-label enemies">🔴 敌对</div>
-            <div class="relation-value enemies-value">${formatCountriesWithFlags(details.enemies)}</div>
-        </div>
-        <div class="relation-row">
-            <div class="relation-label" style="color: #FFD700;">🛢️ 石油输出</div>
-            <div class="relation-value" style="color: #FFD700; font-weight: 600;">${details.oilExport || '-'}</div>
+            <div class="relation-value enemies-value">${enemiesHtml || '-'}</div>
         </div>
     `;
+
+    // 石油模块
+    const panelOilSection = document.getElementById('panelOilSection');
+    const panelOil = document.getElementById('panelOil');
+    if (details.oilReserves || details.oilProduction) {
+        panelOilSection.style.display = 'block';
+        panelOil.innerHTML = `
+            <div class="panel-item">
+                <span class="panel-label">🛢️ 储量</span>
+                <span class="panel-value">${details.oilReserves || '-'}</span>
+            </div>
+            <div class="panel-item">
+                <span class="panel-label">⚙️ 产量</span>
+                <span class="panel-value">${details.oilProduction || '-'}</span>
+            </div>
+            <div class="panel-item full-width">
+                <span class="panel-label">📤 出口目的</span>
+                <span class="panel-value">${details.oilExport || '-'}</span>
+            </div>
+        `;
+    } else {
+        panelOilSection.style.display = 'none';
+    }
 
     panel.style.display = 'block';
 

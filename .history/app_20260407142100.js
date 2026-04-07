@@ -1,48 +1,42 @@
-/** @format */
-
 // ==================== 按钮事件监听 ====================
-document.getElementById("btnCountry").addEventListener("click", function () {
+document.getElementById('btnCountry').addEventListener('click', function () {
     state.showCountry = !state.showCountry;
-    this.classList.toggle("active", state.showCountry);
+    this.classList.toggle('active', state.showCountry);
     updateDisplay();
 });
 
-document.getElementById("btnLabel").addEventListener("click", function () {
+document.getElementById('btnLabel').addEventListener('click', function () {
     state.showLabel = !state.showLabel;
-    this.classList.toggle("active", state.showLabel);
+    this.classList.toggle('active', state.showLabel);
     updateDisplay();
 });
 
-document.getElementById("btnRelation").addEventListener("click", function () {
+document.getElementById('btnRelation').addEventListener('click', function () {
     state.showRelation = !state.showRelation;
-    this.classList.toggle("active", state.showRelation);
+    this.classList.toggle('active', state.showRelation);
     updateDisplay();
 });
 
-document.getElementById("btnResource").addEventListener("click", function () {
+document.getElementById('btnResource').addEventListener('click', function () {
     state.showResource = !state.showResource;
-    this.classList.toggle("active", state.showResource);
+    this.classList.toggle('active', state.showResource);
     updateDisplay();
 });
 
-document.getElementById("btnMilitary").addEventListener("click", function () {
+document.getElementById('btnMilitary').addEventListener('click', function () {
     state.showMilitary = !state.showMilitary;
-    this.classList.toggle("active", state.showMilitary);
+    this.classList.toggle('active', state.showMilitary);
     updateDisplay();
 });
 
-document.getElementById("btnOilExport").addEventListener("click", function () {
+document.getElementById('btnOilExport').addEventListener('click', function () {
     state.showOilExport = !state.showOilExport;
-    this.classList.toggle("active", state.showOilExport);
+    this.classList.toggle('active', state.showOilExport);
     updateDisplay();
-});
-
-document.getElementById("panelCloseBtn").addEventListener("click", function () {
-    hideCountryInfoPanel();
 });
 
 // ==================== 图例 ====================
-const legend = document.getElementById("legend");
+const legend = document.getElementById('legend');
 const religionLegend = `
     <div class="legend-section">
         <h4>宗教派系</h4>
@@ -79,8 +73,8 @@ let countryLegend = '<div class="legend-section"><h4>国家</h4>';
 for (const [, info] of Object.entries(countryData)) {
     countryLegend += `<div class="legend-item"><span class="flag">${info.flag}</span><span>${info.name}</span></div>`;
 }
-countryLegend += "</div>";
-legend.innerHTML = religionLegend + resourceLegend + militaryLegend + oilExportLegend;
+countryLegend += '</div>';
+legend.innerHTML = religionLegend + resourceLegend + militaryLegend + oilExportLegend + countryLegend;
 
 // ==================== 初始化 ====================
 updateDisplay();
