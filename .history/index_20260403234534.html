@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中东地区地图 - 精确国界</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            padding: 15px 30px;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #e8e8e8;
+            font-size: 1.4rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e8e8e8;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-btn.active {
+            background: #4169E1;
+            border-color: #4169E1;
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        .country-label {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .country-label .flag {
+            font-size: 14px;
+        }
+
+        .leaflet-tooltip,
+        .custom-tooltip {
+            background: linear-gradient(145deg, #1e2a4a 0%, #16213e 100%) !important;
+            border: 1px solid #0f3460 !important;
+            border-radius: 10px !important;
+            color: #e8e8e8 !important;
+            padding: 12px 15px !important;
+            font-size: 12px !important;
+            line-height: 1.6 !important;
+            width: 320px !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+            white-space: normal !important;
+        }
+
+        .leaflet-tooltip::before,
+        .custom-tooltip::before {
+            border-right-color: #16213e !important;
+        }
+
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before,
+        .custom-tooltip-top:before,
+        .custom-tooltip-bottom:before,
+        .custom-tooltip-left:before,
+        .custom-tooltip-right:before {
+            border-top-color: #16213e !important;
+        }
+
+        .tooltip-title {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            margin-bottom: 8px !important;
+            padding-bottom: 6px !important;
+            border-bottom: 1px solid #0f3460 !important;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tooltip-title .flag {
+            font-size: 18px;
+        }
+
+        .tooltip-subtitle {
+            font-size: 12px;
+            color: #8fa3bf;
+            font-weight: 500;
+            margin-top: 6px;
+            margin-bottom: 3px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tooltip-label {
+            color: #8fa3bf !important;
+            font-weight: 500;
+        }
+
+        .tooltip-value {
+            color: #fff !important;
+            font-weight: 600;
+            text-align: right;
+            max-width: none;
+            word-break: break-word;
+            white-space: normal !important;
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #0f3460;
+            border-radius: 10px;
+            padding: 14px;
+            color: #e8e8e8;
+            font-size: 11px;
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 160px;
+        }
+
+        .legend h4 {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .zoom-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e8e8e8;
+            font-size: 11px;
+            z-index: 1000;
+        }
+
+        .zoom-info strong {
+            color: #fff;
+        }
+
+        /* 国家信息面板 */
+        .country-info-panel {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            left: auto;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid rgba(15, 52, 96, 0.6);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: #e8e8e8;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-width: 420px;
+            max-width: 480px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-flag {
+            font-size: 36px;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .panel-content {
+            width: 100%;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(15, 52, 96, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 10px;
+            font-size: 11px;
+        }
+
+        .panel-item {
+            display: flex;
+            gap: 3px;
+        }
+
+        .panel-label {
+            color: #8fa3bf;
+            font-weight: 500;
+        }
+
+        .panel-value {
+            color: #fff;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .panel-section-title {
+            grid-column: 1 / -1;
+            color: #fff;
+            font-weight: 600;
+            font-size: 11px;
+            margin-top: 3px;
+            padding-top: 3px;
+            border-top: 1px dashed rgba(15, 52, 96, 0.6);
+        }
+
+        .allies-value {
+            color: #22c55e;
+        }
+
+        .enemies-value {
+            color: #ef4444;
+        }
+
+        /* 航线起止点发光效果 */
+        .arc-start-marker,
+        .arc-end-marker {
+            box-shadow: 0 0 8px 2px currentColor;
+            animation: arcPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes arcPulse {
+
+            0%,
+            100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🗺️ 中东地区地图</h1>
+    </header>
+
+    <!-- 国家信息面板 -->
+    <div id="countryInfoPanel" class="country-info-panel" style="display: none;">
+        <div class="panel-flag" id="panelFlag"></div>
+        <div class="panel-content">
+            <div class="panel-title" id="panelTitle"></div>
+            <div class="panel-grid" id="panelGrid"></div>
+            <div class="panel-section-title" style="margin-top: 10px;">📊 势力派系分布</div>
+            <div id="factionChart" style="width: 100%; height: 200px; margin-top: 8px;"></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="legend" id="legend"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        // ==================== 国家数据 ====================
+        const countryData = {
+            "Saudi Arabia": { flag: "🇸🇦", color: "#8B4513", name: "沙特阿拉伯" },
+            "Iran": { flag: "🇮🇷", color: "#228B22", name: "伊朗" },
+            "Iraq": { flag: "🇮🇶", color: "#CD853F", name: "伊拉克" },
+            "Turkey": { flag: "🇹🇷", color: "#FF6347", name: "土耳其" },
+            "Syria": { flag: "🇸🇾", color: "#DAA520", name: "叙利亚" },
+            "Jordan": { flag: "🇯🇴", color: "#9ACD32", name: "约旦" },
+            "Israel": { flag: "🇮🇱", color: "#4169E1", name: "以色列" },
+            "Lebanon": { flag: "🇱🇧", color: "#87CEEB", name: "黎巴嫩" },
+            "United Arab Emirates": { flag: "🇦🇪", color: "#2E8B57", name: "阿联酋" },
+            "Qatar": { flag: "🇶🇦", color: "#9932CC", name: "卡塔尔" },
+            "Bahrain": { flag: "🇧🇭", color: "#FF69B4", name: "巴林" },
+            "Kuwait": { flag: "🇰🇼", color: "#20B2AA", name: "科威特" },
+            "Oman": { flag: "🇴🇲", color: "#FF8C00", name: "阿曼" },
+            "Yemen": { flag: "🇾🇪", color: "#808080", name: "也门" },
+            "Egypt": { flag: "🇪🇬", color: "#FFD700", name: "埃及" },
+            "Afghanistan": { flag: "🇦🇫", color: "#A0522D", name: "阿富汗" },
+            "Pakistan": { flag: "🇵🇰", color: "#6B8E23", name: "巴基斯坦" }
+        };
+
+        // 中文名到countryCenters键的映射
+        const nameToKey = {
+            "沙特阿拉伯": "Saudi Arabia", "沙特": "Saudi Arabia",
+            "伊朗": "Iran",
+            "伊拉克": "Iraq",
+            "土耳其": "Turkey",
+            "叙利亚": "Syria",
+            "约旦": "Jordan",
+            "以色列": "Israel",
+            "黎巴嫩": "Lebanon",
+            "阿联酋": "United Arab Emirates", "阿伯": "United Arab Emirates",
+            "卡塔尔": "Qatar",
+            "巴林": "Bahrain",
+            "科威特": "Kuwait",
+            "阿曼": "Oman",
+            "也门": "Yemen",
+            "埃及": "Egypt",
+            "阿富汗": "Afghanistan",
+            "巴基斯坦": "Pakistan",
+            "美国": "United States",
+            "俄罗斯": "Russia",
+            "英国": "United Kingdom",
+            "中国": "China"
+        };
+
+        // 通过各种名称获取countryData的键
+        function getCountryKey(name) {
+            // 先检查是否是英文键
+            if (countryData[name]) return name;
+            // 再检查中文名映射
+            if (nameToKey[name]) return nameToKey[name];
+            // 遍历countryData，通过中文名匹配
+            for (const [key, data] of Object.entries(countryData)) {
+                if (data.name === name) return key;
+            }
+            return null;
+        }
+
+        // 根据国家名称获取旗帜
+        function getCountryFlag(name) {
+            const key = getCountryKey(name);
+            if (key && countryData[key]) {
+                return countryData[key].flag;
+            }
+            // 特殊实体的旗帜映射
+            const flagMap = {
+                "美国": "🇺🇸", "俄罗斯": "🇷🇺", "英国": "🇬🇧", "中国": "🇨🇳",
+                "北约": "🅰️", "土耳其": "🇹🇷", "黎巴嫩真主党": "🔶",
+                "伊拉克民兵": "🔶", "也门胡塞": "🔶", "哈马斯": "🔶",
+                "胡塞武装": "🔶", "基地组织": "⚫", "伊斯兰国": "⚫",
+                "库尔德武装": "🔶", "伊斯兰国呼罗珊分支": "⚫"
+            };
+            return flagMap[name] || '🏳️';
+        }
+
+        // 为盟友/敌对国家列表添加旗帜
+        function formatCountriesWithFlags(countriesStr) {
+            if (!countriesStr) return '-';
+            const countries = countriesStr.split(/[、,，]/).map(s => s.trim()).filter(s => s);
+            return countries.map(c => getCountryFlag(c) + ' ' + c).join('、');
+        }
+
+        // ==================== 国家势力派系数据 ====================
+        const countryFactions = {
+            "Saudi Arabia": [
+                { name: "王室核心派系", power: 85, population: 25, color: "#8B4513" },
+                { name: "宗教保守派", power: 70, population: 35, color: "#D2691E" },
+                { name: "现代化改革派", power: 45, population: 20, color: "#F4A460" },
+                { name: "商业精英阶层", power: 55, population: 15, color: "#DEB887" },
+                { name: "军方势力", power: 50, population: 5, color: "#556B2F" }
+            ],
+            "Iran": [
+                { name: "最高领袖哈梅内伊派", power: 90, population: 10, color: "#228B22" },
+                { name: "革命卫队", power: 85, population: 5, color: "#32CD32" },
+                { name: "保守派教士集团", power: 70, population: 15, color: "#6B8E23" },
+                { name: "改革派/温和派", power: 40, population: 30, color: "#9ACD32" },
+                { name: "强硬派/民族主义者", power: 55, population: 25, color: "#556B2F" },
+                { name: "经济官僚阶层", power: 45, population: 15, color: "#8FBC8F" }
+            ],
+            "Iraq": [
+                { name: "什叶派政治联盟", power: 75, population: 55, color: "#CD853F" },
+                { name: "库尔德斯坦民主党", power: 65, population: 20, color: "#4169E1" },
+                { name: "库尔德爱国联盟", power: 55, population: 8, color: "#6495ED" },
+                { name: "逊尼派政治联盟", power: 35, population: 20, color: "#DAA520" },
+                { name: "伊斯兰国残余", power: 10, population: 2, color: "#2F4F4F" }
+            ],
+            "Turkey": [
+                { name: "正义与发展党", power: 80, population: 35, color: "#FF6347" },
+                { name: "民族主义行动党", power: 60, population: 15, color: "#DC143C" },
+                { name: "共和人民党", power: 45, population: 25, color: "#B22222" },
+                { name: "库尔德政党", power: 40, population: 15, color: "#4169E1" },
+                { name: "居伦运动", power: 25, population: 10, color: "#87CEEB" },
+                { name: "军方传统势力", power: 30, population: 5, color: "#8B0000" }
+            ],
+            "Syria": [
+                { name: "阿萨德家族/阿拉维派", power: 85, population: 12, color: "#DAA520" },
+                { name: "革命力量/自由军", power: 25, population: 40, color: "#FFD700" },
+                { name: "伊斯兰主义反对派", power: 20, population: 25, color: "#8B0000" },
+                { name: "库尔德武装", power: 30, population: 10, color: "#4169E1" },
+                { name: "伊斯兰国残余", power: 5, population: 3, color: "#2F4F4F" }
+            ],
+            "Israel": [
+                { name: "利库德集团", power: 75, population: 25, color: "#4169E1" },
+                { name: "蓝白党", power: 55, population: 20, color: "#1E90FF" },
+                { name: "沙斯党", power: 45, population: 12, color: "#000080" },
+                { name: "联合阿拉伯名单", power: 35, population: 20, color: "#228B22" },
+                { name: "宗教锡安主义者", power: 50, population: 10, color: "#8B008B" },
+                { name: "极右翼政党", power: 40, population: 8, color: "#DC143C" }
+            ],
+            "Lebanon": [
+                { name: "真主党", power: 85, population: 30, color: "#87CEEB" },
+                { name: "基督教马龙派", power: 60, population: 21, color: "#4169E1" },
+                { name: "逊尼派政党", power: 50, population: 27, color: "#228B22" },
+                { name: "德鲁兹派", power: 35, population: 6, color: "#6B8E23" },
+                { name: "民主自由党", power: 30, population: 5, color: "#9932CC" }
+            ],
+            "United Arab Emirates": [
+                { name: "阿布扎比王室", power: 90, population: 15, color: "#2E8B57" },
+                { name: "迪拜王室", power: 80, population: 10, color: "#3CB371" },
+                { name: "宗教保守派", power: 40, population: 30, color: "#8FBC8F" },
+                { name: "商业精英", power: 55, population: 20, color: "#20B2AA" },
+                { name: "军方势力", power: 50, population: 5, color: "#556B2F" }
+            ],
+            "Qatar": [
+                { name: "阿勒萨尼王室", power: 95, population: 10, color: "#9932CC" },
+                { name: "穆斯林兄弟会网络", power: 50, population: 25, color: "#8B008B" },
+                { name: "宗教学者集团", power: 45, population: 20, color: "#DDA0DD" },
+                { name: "商业精英阶层", power: 60, population: 15, color: "#BA55D3" },
+                { name: "温和改革派", power: 35, population: 30, color: "#9370DB" }
+            ],
+            "Jordan": [
+                { name: "哈希姆王室", power: 90, population: 5, color: "#9ACD32" },
+                { name: "部落长老势力", power: 70, population: 30, color: "#6B8E23" },
+                { name: "穆斯林兄弟会", power: 50, population: 25, color: "#556B2F" },
+                { name: "Palestinian Jordanians", power: 55, population: 40, color: "#8FBC8F" },
+                { name: "西方支持改革派", power: 40, population: 15, color: "#98FB98" }
+            ],
+            "Bahrain": [
+                { name: "哈利法王室", power: 85, population: 30, color: "#FF69B4" },
+                { name: "逊尼派精英", power: 60, population: 20, color: "#FFB6C1" },
+                { name: "什叶派反对派", power: 45, population: 65, color: "#DC143C" },
+                { name: "亲改革势力", power: 30, population: 20, color: "#DDA0DD" }
+            ],
+            "Kuwait": [
+                { name: "萨巴赫王室", power: 85, population: 10, color: "#20B2AA" },
+                { name: "商业家族", power: 70, population: 15, color: "#48D1CC" },
+                { name: "宗教保守派", power: 50, population: 35, color: "#40E0D0" },
+                { name: "部落联盟", power: 55, population: 25, color: "#00CED1" },
+                { name: "改革派知识分子", power: 35, population: 15, color: "#7FFFD4" }
+            ],
+            "Oman": [
+                { name: "赛义德王朝", power: 95, population: 10, color: "#FF8C00" },
+                { name: "宗教学者集团", power: 60, population: 25, color: "#FFA500" },
+                { name: "部落长老", power: 70, population: 35, color: "#FFD700" },
+                { name: "商业精英", power: 50, population: 15, color: "#FFAE42" },
+                { name: "青年改革运动", power: 25, population: 20, color: "#FFCC00" }
+            ],
+            "Yemen": [
+                { name: "胡塞武装", power: 75, population: 35, color: "#808080" },
+                { name: "哈迪政府派系", power: 30, population: 20, color: "#FFD700" },
+                { name: "南方过渡委员会", power: 35, population: 15, color: "#4169E1" },
+                { name: "部落武装联盟", power: 55, population: 30, color: "#8B4513" },
+                { name: "基地组织阿拉伯半岛", power: 15, population: 5, color: "#2F4F4F" },
+                { name: "伊斯兰国残余", power: 10, population: 3, color: "#000" }
+            ],
+            "Egypt": [
+                { name: "军方集团", power: 90, population: 5, color: "#FFD700" },
+                { name: "穆斯林兄弟会", power: 40, population: 30, color: "#228B22" },
+                { name: "塞西支持网络", power: 75, population: 25, color: "#DAA520" },
+                { name: "自由派知识分子", power: 30, population: 15, color: "#4169E1" },
+                { name: "宗教极端势力", power: 20, population: 10, color: "#8B0000" },
+                { name: "青年运动组织", power: 25, population: 20, color: "#9932CC" }
+            ],
+            "Afghanistan": [
+                { name: "塔利班领导层", power: 90, population: 40, color: "#A0522D" },
+                { name: "哈卡尼网络", power: 65, population: 15, color: "#8B4513" },
+                { name: "民族抵抗阵线", power: 25, population: 20, color: "#4169E1" },
+                { name: "伊斯兰国呼罗珊分支", power: 15, population: 5, color: "#2F4F4F" },
+                { name: "部落长老会议", power: 40, population: 25, color: "#DEB887" }
+            ],
+            "Pakistan": [
+                { name: "军方高层", power: 85, population: 5, color: "#6B8E23" },
+                { name: "人民党", power: 55, population: 25, color: "#228B22" },
+                { name: "正义运动党", power: 60, population: 30, color: "#4169E1" },
+                { name: "伊斯兰促进会", power: 40, population: 20, color: "#8B008B" },
+                { name: "宗教政党联盟", power: 35, population: 15, color: "#FF6347" },
+                { name: "普什图民族主义者", power: 30, population: 15, color: "#DAA520" }
+            ]
+        };
+
+        // ==================== 国家详细信息 ====================
+        const countryDetails = {
+            "Saudi Arabia": {
+                regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "35,000,000", economy: "石油",
+                allies: "阿联酋、巴林、科威特、阿曼、埃及、美国", enemies: "伊朗、卡塔尔、土耳其"
+            },
+            "Iran": {
+                regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                population: "87,000,000", economy: "石油",
+                allies: "叙利亚、黎巴嫩真主党、伊拉克民兵、也门胡塞、俄罗斯", enemies: "沙特、以色列、美国"
+            },
+            "Iraq": {
+                regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                ideology: "民族主义", ethnicity: "阿拉伯人、库尔德人", religion: "伊斯兰教（什叶派）",
+                population: "42,000,000", economy: "石油",
+                allies: "伊朗、美国（有限）、土耳其", enemies: "伊斯兰国、沙特"
+            },
+            "Turkey": {
+                regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                population: "85,000,000", economy: "制造业、旅游业",
+                allies: "北约、美国、阿塞拜疆", enemies: "希腊、俄罗斯（复杂）、库尔德武装"
+            },
+            "Syria": {
+                regime: "阿拉伯叙利亚共和国", regimeType: "总统制共和制", leader: "巴沙尔·阿萨德总统",
+                ideology: "阿拉伯民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "21,000,000", economy: "石油、农业",
+                allies: "伊朗、俄罗斯、黎巴嫩真主党", enemies: "以色列、美国、土耳其、沙特"
+            },
+            "Jordan": {
+                regime: "哈希姆约旦王国", regimeType: "君主立宪制", leader: "阿卜杜拉二世国王",
+                ideology: "哈希姆主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "11,000,000", economy: "服务业、旅游业",
+                allies: "美国、沙特、以色列（秘密）、埃及", enemies: "伊朗、伊斯兰国"
+            },
+            "Israel": {
+                regime: "以色列国", regimeType: "议会制共和制", leader: "内塔尼亚胡总理",
+                ideology: "犹太复国主义", ethnicity: "犹太人", religion: "犹太教",
+                population: "9,000,000", economy: "科技、制造业",
+                allies: "美国、英国、阿联酋、巴林、摩洛哥", enemies: "伊朗、叙利亚、黎巴嫩真主党、巴勒斯坦哈马斯"
+            },
+            "Lebanon": {
+                regime: "黎巴嫩共和国", regimeType: "教派分权制", leader: "米歇尔·奥恩总统",
+                ideology: "教派民族主义", ethnicity: "黎巴嫩人", religion: "伊斯兰教（什叶派）",
+                population: "6,000,000", economy: "金融、服务业",
+                allies: "伊朗、叙利亚、真主党", enemies: "以色列、沙特、美国"
+            },
+            "United Arab Emirates": {
+                regime: "阿拉伯联合酋长国", regimeType: "联邦君主制", leader: "哈利法·本·扎耶德总统",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "10,000,000", economy: "石油、金融",
+                allies: "沙特、美国、以色列（正常化）、埃及", enemies: "伊朗、卡塔尔"
+            },
+            "Qatar": {
+                regime: "卡塔尔国", regimeType: "绝对君主制", leader: "塔米姆·本·哈马德·阿勒萨尼埃米尔",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "2,800,000", economy: "石油、天然气",
+                allies: "土耳其、伊朗、哈马斯、美国（基地）", enemies: "沙特、阿联酋、巴林、埃及"
+            },
+            "Bahrain": {
+                regime: "巴林王国", regimeType: "君主立宪制", leader: "哈马德·本·伊萨·阿勒哈利法国王",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "1,500,000", economy: "石油、金融",
+                allies: "沙特、美国、阿联酋、以色列（正常化）", enemies: "伊朗"
+            },
+            "Kuwait": {
+                regime: "科威特国", regimeType: "君主立宪制", leader: "米沙尔·艾哈迈德·贾比尔·萨巴赫埃米尔",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "4,500,000", economy: "石油",
+                allies: "沙特、美国", enemies: "伊朗"
+            },
+            "Oman": {
+                regime: "阿曼苏丹国", regimeType: "君主制", leader: "海赛姆·本·塔里克·阿勒赛义德苏丹",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "5,000,000", economy: "石油、渔业",
+                allies: "美国（缓冲国）、伊朗、沙特", enemies: ""
+            },
+            "Yemen": {
+                regime: "也门共和国", regimeType: "总统制共和制", leader: "委员会领导",
+                ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "33,000,000", economy: "石油、农业",
+                allies: "沙特（针对胡塞）、美国（反恐）", enemies: "胡塞武装、基地组织、伊斯兰国"
+            },
+            "Egypt": {
+                regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "104,000,000", economy: "旅游业、运河",
+                allies: "美国、以色列（有限）、沙特、阿联酋", enemies: "土耳其（穆兄会）、伊朗"
+            },
+            "Afghanistan": {
+                regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                population: "40,000,000", economy: "农牧业",
+                allies: "巴基斯坦、卡塔尔", enemies: "美国、伊斯兰国呼罗珊分支"
+            },
+            "Pakistan": {
+                regime: "巴基斯坦伊斯兰共和国", regimeType: "联邦议会共和制", leader: "阿里总统",
+                ideology: "伊斯兰主义", ethnicity: "旁遮普人、信德人", religion: "伊斯兰教（逊尼派）",
+                population: "240,000,000", economy: "农业、制造业",
+                allies: "中国、土耳其、海湾国家", enemies: "印度、美国（复杂）"
+            }
+        };
+        // ==================== 精确国界 GeoJSON (嵌入) ====================
+        const countriesGeoJSON = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Saudi Arabia", "nameCN": "沙特阿拉伯" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[55, 22], [57, 22], [58, 20], [56, 18], [52, 17], [48, 16], [46, 15], [45, 18], [42, 22], [40, 25], [38, 28], [36, 31], [38, 32], [42, 31], [45, 30], [48, 28], [50, 27], [52, 27], [55, 25], [57, 24], [60, 22], [62, 21], [58, 19], [55, 19], [55, 22]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Iran", "nameCN": "伊朗" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[44, 39], [48, 40], [52, 38], [55, 36], [56, 34], [58, 32], [60, 30], [62, 28], [61, 25], [60, 22], [57, 22], [55, 25], [52, 27], [50, 27], [48, 28], [45, 30], [44, 32], [44, 35], [42, 37], [44, 39]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Iraq", "nameCN": "伊拉克" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[38, 37], [42, 37], [45, 36], [46, 35], [48, 35], [48, 33], [47, 32], [45, 31], [44, 30], [42, 29], [40, 29], [38, 30], [36, 31], [36, 33], [38, 35], [38, 37]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Turkey", "nameCN": "土耳其" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[26, 42], [28, 41], [32, 41], [36, 41], [40, 41], [44, 40], [46, 38], [44, 37], [42, 37], [40, 37], [38, 37], [36, 37], [34, 36], [32, 36], [30, 36], [28, 36], [26, 37], [26, 39], [26, 42]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Syria", "nameCN": "叙利亚" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[36, 37], [38, 37], [40, 37], [42, 37], [42, 35], [41, 34], [40, 33], [38, 32], [36, 33], [35, 34], [35, 36], [36, 37]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Jordan", "nameCN": "约旦" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[35, 33], [36, 33], [38, 32], [38, 30], [36, 29], [35, 29], [35, 31], [35, 33]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Israel", "nameCN": "以色列" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[34.3, 31.3], [34.5, 31.3], [35, 31.5], [35.2, 31.5], [35.5, 31.8], [35, 32], [34.8, 32.8], [34.3, 31.3]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Lebanon", "nameCN": "黎巴嫩" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[35.2, 34.6], [35.8, 34.6], [36, 34.3], [36, 33.9], [35.5, 33.8], [35.2, 33.9], [35.2, 34.3], [35.2, 34.6]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "United Arab Emirates", "nameCN": "阿联酋" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[52, 24], [54, 24], [55, 24], [56, 24], [56, 26], [55, 26], [54, 26], [52, 25], [52, 24]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Qatar", "nameCN": "卡塔尔" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[50.5, 25.5], [51.5, 25.5], [51.5, 25.2], [50.5, 25.2], [50.5, 25.5]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Bahrain", "nameCN": "巴林" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[50.3, 26.2], [50.7, 26.2], [50.7, 26], [50.3, 26], [50.3, 26.2]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Kuwait", "nameCN": "科威特" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[46, 29.5], [48, 29.5], [48.5, 29], [48.5, 28.5], [47, 28.5], [46, 28.5], [46, 29.5]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Oman", "nameCN": "阿曼" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[56, 26], [57, 26], [58, 24], [58, 22], [60, 21], [62, 20], [60, 18], [58, 17], [56, 17], [55, 18], [54, 20], [54, 22], [55, 24], [56, 26]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Yemen", "nameCN": "也门" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[42, 18], [44, 18], [46, 16], [48, 14], [50, 13], [52, 13], [54, 14], [56, 14], [58, 15], [58, 13], [56, 12], [54, 12], [52, 13], [50, 13], [48, 14], [46, 14], [44, 15], [42, 16], [42, 18]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Egypt", "nameCN": "埃及" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[25, 31], [28, 31], [32, 31], [34, 31], [35, 29], [35, 27], [34, 25], [32, 22], [30, 22], [28, 22], [25, 22], [25, 31]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Afghanistan", "nameCN": "阿富汗" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[60, 38], [65, 38], [69, 37], [71, 36], [72, 34], [70, 33], [67, 31], [63, 30], [60, 30], [58, 32], [60, 35], [60, 38]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Pakistan", "nameCN": "巴基斯坦" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[60, 38], [62, 37], [66, 30], [67, 28], [69, 26], [71, 24], [74, 20], [75, 18], [74, 12], [61, 12], [60, 20], [60, 30], [60, 38]]]
+                    }
+                }
+            ]
+        };
+
+        // ==================== 省州边界 GeoJSON (精确边界) ====================
+
+        // ==================== 国家中心点 ====================
+        const countryCenters = {
+            "Saudi Arabia": [24, 48], "Iran": [32, 53], "Iraq": [33, 44], "Turkey": [39, 35],
+            "Syria": [35, 38], "Jordan": [31, 36], "Israel": [31.5, 34.9], "Lebanon": [34, 35.8],
+            "United Arab Emirates": [24, 54], "Qatar": [25.3, 51.2], "Bahrain": [26.1, 50.5],
+            "Kuwait": [29, 47.5], "Oman": [22, 57], "Yemen": [15, 48], "Egypt": [27, 30],
+            "Afghanistan": [34, 66], "Pakistan": [30, 67]
+        };
+
+
+        // ==================== 地图初始化 ====================
+        const map = L.map('map', {
+            center: [29, 47],
+            zoom: 5,
+            minZoom: 4,
+            maxZoom: 10
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // ==================== 状态管理 ====================
+        let countriesLayer, countryLabelsLayer;
+        let relationshipLinesLayer = null; // 用于绘制关系线
+        let preciseCountriesGeoJSON = null; // 精确国家边界数据
+
+        // ==================== 绘制关系线 ====================
+
+        // 生成抛物线点（贝塞尔曲线）
+        function getArcPoints(start, end, segments = 50) {
+            const points = [];
+            const midLat = (start[0] + end[0]) / 2;
+            const midLng = (start[1] + end[1]) / 2;
+
+            // 计算距离来确定弧度高度
+            const distance = Math.sqrt(
+                Math.pow(end[0] - start[0], 2) +
+                Math.pow(end[1] - start[1], 2)
+            );
+            const arcHeight = distance * 0.35; // 弧度高度为距离的35%，更高
+
+            // 弧顶坐标（在两点连线的中点上方）
+            const peakLat = midLat + arcHeight;
+            const peakLng = midLng;
+
+            // 生成贝塞尔曲线点
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                // 二次贝塞尔曲线公式
+                const lat = Math.pow(1 - t, 2) * start[0] +
+                    2 * (1 - t) * t * peakLat +
+                    Math.pow(t, 2) * end[0];
+                const lng = Math.pow(1 - t, 2) * start[1] +
+                    2 * (1 - t) * t * peakLng +
+                    Math.pow(t, 2) * end[1];
+                points.push([lat, lng]);
+            }
+            return points;
+        }
+
+        // ==================== 更新国家信息面板 ====================
+        function updateCountryInfoPanel(countryName) {
+            const panel = document.getElementById('countryInfoPanel');
+            const panelFlag = document.getElementById('panelFlag');
+            const panelTitle = document.getElementById('panelTitle');
+            const panelGrid = document.getElementById('panelGrid');
+
+            const key = getCountryKey(countryName);
+            if (!key) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            const info = countryData[key];
+            const details = countryDetails[key];
+
+            if (!info || !details) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panelFlag.textContent = info.flag;
+            panelTitle.textContent = info.name;
+
+            let html = `
+                <div class="panel-item"><span class="panel-label">政权:</span><span class="panel-value">${details.regime}</span></div>
+                <div class="panel-item"><span class="panel-label">类型:</span><span class="panel-value">${details.regimeType}</span></div>
+                <div class="panel-item"><span class="panel-label">领袖:</span><span class="panel-value">${details.leader}</span></div>
+                <div class="panel-item"><span class="panel-label">意识形态:</span><span class="panel-value">${details.ideology}</span></div>
+                <div class="panel-item"><span class="panel-label">民族:</span><span class="panel-value">${details.ethnicity}</span></div>
+                <div class="panel-item"><span class="panel-label">宗教:</span><span class="panel-value">${details.religion}</span></div>
+                <div class="panel-item"><span class="panel-label">人口:</span><span class="panel-value">${details.population}</span></div>
+                <div class="panel-item"><span class="panel-label">经济:</span><span class="panel-value">${details.economy}</span></div>
+                <div class="panel-section-title">🟢 盟友</div>
+                <div class="panel-item" style="grid-column: 1 / -1;"><span class="allies-value">${formatCountriesWithFlags(details.allies)}</span></div>
+                <div class="panel-section-title">🔴 敌对</div>
+                <div class="panel-item" style="grid-column: 1 / -1;"><span class="enemies-value">${formatCountriesWithFlags(details.enemies)}</span></div>
+            `;
+
+            panelGrid.innerHTML = html;
+            panel.style.display = 'flex';
+
+            // 渲染势力派系图表
+            renderFactionChart(key);
+        }
+
+        // 渲染势力派系图表 - 水平对比柱状图
+        function renderFactionChart(countryKey) {
+            const factions = countryFactions[countryKey];
+            if (!factions) return;
+
+            const chartDom = document.getElementById('factionChart');
+            if (!chartDom) return;
+
+            // 销毁旧图表实例
+            let chartInstance = echarts.getInstanceByDom(chartDom);
+            if (chartInstance) {
+                chartInstance.dispose();
+            }
+            chartInstance = echarts.init(chartDom);
+
+            const names = factions.map(f => f.name);
+            const powerData = factions.map(f => f.power);
+            const popData = factions.map(f => f.population);
+            const colors = factions.map(f => f.color);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    backgroundColor: 'rgba(22, 33, 62, 0.95)',
+                    borderColor: '#0f3460',
+                    textStyle: { color: '#e8e8e8', fontSize: 11 },
+                    formatter: function (params) {
+                        const idx = params[0].dataIndex;
+                        const faction = factions[idx];
+                        let html = `<b>${faction.name}</b><br/>`;
+                        html += `<span style="color:#22c55e">▮</span> 势力强度: ${faction.power}<br/>`;
+                        html += `<span style="color:#60a5fa">▮</span> 人口占比: ${faction.population}%`;
+                        return html;
+                    }
+                },
+                legend: {
+                    data: ['势力强度', '人口占比'],
+                    top: 0,
+                    textStyle: { color: '#e8e8e8', fontSize: 10 },
+                    itemWidth: 12,
+                    itemHeight: 8
+                },
+                grid: {
+                    left: 8,
+                    right: 8,
+                    top: 28,
+                    bottom: 8,
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    max: 100,
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisLabel: { color: '#8fa3bf', fontSize: 9 }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: names,
+                    axisLabel: { color: '#e8e8e8', fontSize: 10, width: 80, overflow: 'truncate' },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
+                },
+                series: [
+                    {
+                        name: '势力强度',
+                        type: 'bar',
+                        data: powerData,
+                        itemStyle: {
+                            color: function (params) {
+                                return colors[params.dataIndex];
+                            },
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        barWidth: '35%',
+                        label: {
+                            show: true,
+                            position: 'right',
+                            color: '#e8e8e8',
+                            fontSize: 9,
+                            formatter: '{c}'
+                        }
+                    },
+                    {
+                        name: '人口占比',
+                        type: 'bar',
+                        data: popData,
+                        itemStyle: {
+                            color: function (params) {
+                                return colors[params.dataIndex];
+                            },
+                            opacity: 0.5,
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        barWidth: '35%',
+                        label: {
+                            show: false
+                        }
+                    }
+                ]
+            };
+
+            chartInstance.setOption(option);
+        }
+
+        function hideCountryInfoPanel() {
+            const panel = document.getElementById('countryInfoPanel');
+            panel.style.display = 'none';
+
+            // 销毁 echarts 图表实例
+            const chartDom = document.getElementById('factionChart');
+            if (chartDom) {
+                const chartInstance = echarts.getInstanceByDom(chartDom);
+                if (chartInstance) {
+                    chartInstance.dispose();
+                }
+            }
+        }
+
+
+        function drawRelationshipLines(countryName) {
+            // 清除之前的关系线
+            if (relationshipLinesLayer) {
+                map.removeLayer(relationshipLinesLayer);
+            }
+            relationshipLinesLayer = L.layerGroup();
+
+            const details = countryDetails[countryName];
+            if (!details) return;
+
+            const center = countryCenters[countryName];
+            if (!center) return;
+
+            // 解析盟友和敌对国家
+            const parseCountries = (str) => {
+                if (!str) return [];
+                return str.split(/[、,，]/).map(s => s.trim()).filter(s => s);
+            };
+
+            const allies = parseCountries(details.allies);
+            const enemies = parseCountries(details.enemies);
+
+            // 绘制盟友线（绿色）- 抛物线
+            allies.forEach(allyName => {
+                const key = nameToKey[allyName] || allyName;
+                const allyCenter = countryCenters[key];
+                if (allyCenter) {
+                    const arcPoints = getArcPoints(center, allyCenter);
+                    const polyline = L.polyline(arcPoints, {
+                        color: '#22c55e',
+                        weight: 1.5,
+                        opacity: 0.8
+                    });
+                    relationshipLinesLayer.addLayer(polyline);
+
+                    // 起点标记 - 发光圆形
+                    // const startMarker = L.circleMarker([center[0], center[1]], {
+                    //     radius: 5,
+                    //     fillColor: '#22c55e',
+                    //     fillOpacity: 0.9,
+                    //     color: '#fff',
+                    //     weight: 1.5,
+                    //     className: 'arc-start-marker'
+                    // });
+                    // relationshipLinesLayer.addLayer(startMarker);
+
+                    // 终点标记 - 发光圆形
+                    const endMarker = L.circleMarker([allyCenter[0], allyCenter[1]], {
+                        radius: 5,
+                        fillColor: '#22c55e',
+                        fillOpacity: 0.9,
+                        color: '#fff',
+                        weight: 1.5,
+                        className: 'arc-end-marker'
+                    });
+                    relationshipLinesLayer.addLayer(endMarker);
+                }
+            });
+
+            // 绘制敌对线（红色）- 抛物线
+            enemies.forEach(enemyName => {
+                const key = nameToKey[enemyName] || enemyName;
+                const enemyCenter = countryCenters[key];
+                if (enemyCenter) {
+                    const arcPoints = getArcPoints(center, enemyCenter);
+                    const polyline = L.polyline(arcPoints, {
+                        color: '#ef4444',
+                        weight: 1.5,
+                        opacity: 0.8
+                    });
+                    relationshipLinesLayer.addLayer(polyline);
+
+                    // 起点标记 - 发光圆形
+                    const startMarker = L.circleMarker([center[0], center[1]], {
+                        radius: 5,
+                        fillColor: '#ef4444',
+                        fillOpacity: 0.9,
+                        color: '#fff',
+                        weight: 1.5,
+                        className: 'arc-start-marker'
+                    });
+                    relationshipLinesLayer.addLayer(startMarker);
+
+                    // 终点标记 - 发光圆形
+                    const endMarker = L.circleMarker([enemyCenter[0], enemyCenter[1]], {
+                        radius: 5,
+                        fillColor: '#ef4444',
+                        fillOpacity: 0.9,
+                        color: '#fff',
+                        weight: 1.5,
+                        className: 'arc-end-marker'
+                    });
+                    relationshipLinesLayer.addLayer(endMarker);
+                }
+            });
+
+            relationshipLinesLayer.addTo(map);
+        }
+
+        function clearRelationshipLines() {
+            if (relationshipLinesLayer) {
+                map.removeLayer(relationshipLinesLayer);
+                relationshipLinesLayer = null;
+            }
+        }
+
+        // ==================== 加载精确边界数据 ====================
+        async function loadBoundaryData() {
+            try {
+                // 加载精确国家边界
+                const countriesResponse = await fetch('./me-countries.geojson');
+                preciseCountriesGeoJSON = await countriesResponse.json();
+                console.log('精确国家边界数据已加载:', preciseCountriesGeoJSON.features.length, '个国家');
+            } catch (error) {
+                console.error('加载国家边界数据失败:', error);
+            }
+        }
+
+        // ==================== 创建 Tooltip 内容 ====================
+        function createCountryTooltip(countryName, countryInfo) {
+            const details = countryDetails[countryName];
+            if (!details) {
+                return `<div class="tooltip-title"><span class="flag">${countryInfo.flag}</span>${countryInfo.name}</div>`;
+            }
+            return `
+                <div class="tooltip-title"><span class="flag">${countryInfo.flag}</span>${countryInfo.name}</div>
+                <div class="tooltip-row"><span class="tooltip-label">政权:</span><span class="tooltip-value">${details.regime}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">类型:</span><span class="tooltip-value">${details.regimeType}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">领袖:</span><span class="tooltip-value">${details.leader}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">意识形态:</span><span class="tooltip-value">${details.ideology}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">民族:</span><span class="tooltip-value">${details.ethnicity}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">宗教:</span><span class="tooltip-value">${details.religion}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">人口:</span><span class="tooltip-value">${details.population}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">经济:</span><span class="tooltip-value">${details.economy}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">盟友:</span><span class="tooltip-value">${details.allies || '-'}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">敌对:</span><span class="tooltip-value">${details.enemies || '-'}</span></div>
+            `;
+        }
+
+        // ==================== 创建图层 ====================
+        function createCountriesLayer() {
+            // 优先使用精确边界数据，否则使用嵌入数据
+            const geoJSONData = preciseCountriesGeoJSON || countriesGeoJSON;
+            return L.geoJSON(geoJSONData, {
+                style: (feature) => {
+                    const key = getCountryKey(feature.properties.name);
+                    const info = key ? countryData[key] : null;
+                    return {
+                        fillColor: info?.color || '#888',
+                        weight: 2, opacity: 1, color: 'white', fillOpacity: 0.6
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    const key = getCountryKey(feature.properties.name);
+                    if (!key) return;
+                    layer.on({
+                        click: (e) => {
+                            // 清除之前的高亮
+                            countriesLayer.eachLayer((l) => {
+                                countriesLayer.resetStyle(l);
+                            });
+                            // 高亮当前国家
+                            e.target.setStyle({ weight: 3, color: '#666', fillOpacity: 0.8 });
+                            e.target.bringToFront();
+                            updateCountryInfoPanel(key);
+                            drawRelationshipLines(key);
+                        }
+                    });
+                }
+            });
+        }
+
+        function createCountryLabels() {
+            return L.layerGroup();
+        }
+
+        // ==================== 模式切换 ====================
+        function updateDisplay() {
+            // 移除所有层
+            if (countriesLayer) map.removeLayer(countriesLayer);
+            if (countryLabelsLayer) map.removeLayer(countryLabelsLayer);
+
+            if (!countriesLayer) countriesLayer = createCountriesLayer();
+            if (!countryLabelsLayer) countryLabelsLayer = createCountryLabels();
+            map.addLayer(countriesLayer);
+            map.addLayer(countryLabelsLayer);
+        }
+
+        // ==================== 图例 ====================
+        const legend = document.getElementById('legend');
+        let legendHTML = '<h4>国家图例</h4>';
+        for (const [, info] of Object.entries(countryData)) {
+            legendHTML += `<div class="legend-item"><div class="legend-color" style="background:${info.color}"></div><span>${info.flag} ${info.name}</span></div>`;
+        }
+        legend.innerHTML = legendHTML;
+
+        // ==================== 初始化 ====================
+        // 先用嵌入数据显示，再异步加载精确数据
+        updateDisplay();
+
+        // 异步加载精确边界数据
+        loadBoundaryData().then(() => {
+            // 重新渲染当前层以使用精确数据
+            if (countriesLayer) {
+                map.removeLayer(countriesLayer);
+                countriesLayer = createCountriesLayer();
+                map.addLayer(countriesLayer);
+            }
+        });
+    </script>
+</body>
+
+</html>

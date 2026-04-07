@@ -1,0 +1,551 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    background: #1a1a2e;
+    min-height: 100vh;
+}
+
+header {
+    background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+    padding: 15px 30px;
+    border-bottom: 1px solid #0f3460;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    color: #e8e8e8;
+    font-size: 1.4rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+.header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e8e8e8;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-btn.active {
+    background: #4169E1;
+    border-color: #4169E1;
+}
+
+#map {
+    width: 100%;
+    height: calc(100vh - 60px);
+}
+
+.country-label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+.country-label .flag {
+    font-size: 14px;
+}
+
+.leaflet-tooltip,
+.custom-tooltip {
+    background: linear-gradient(145deg, #1e2a4a 0%, #16213e 100%) !important;
+    border: 1px solid #0f3460 !important;
+    border-radius: 10px !important;
+    color: #e8e8e8 !important;
+    padding: 12px 15px !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+    width: 320px !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+    white-space: normal !important;
+}
+
+.leaflet-tooltip::before,
+.custom-tooltip::before {
+    border-right-color: #16213e !important;
+}
+
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before,
+.custom-tooltip-top:before,
+.custom-tooltip-bottom:before,
+.custom-tooltip-left:before,
+.custom-tooltip-right:before {
+    border-top-color: #16213e !important;
+}
+
+.tooltip-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid #0f3460 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltip-title .flag {
+    font-size: 18px;
+}
+
+.tooltip-subtitle {
+    font-size: 12px;
+    color: #8fa3bf;
+    font-weight: 500;
+    margin-top: 6px;
+    margin-bottom: 3px;
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.tooltip-label {
+    color: #8fa3bf !important;
+    font-weight: 500;
+}
+
+.tooltip-value {
+    color: #fff !important;
+    font-weight: 600;
+    text-align: right;
+    max-width: none;
+    word-break: break-word;
+    white-space: normal !important;
+}
+
+.legend {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(22, 33, 62, 0.95);
+    border: 1px solid #0f3460;
+    border-radius: 10px;
+    padding: 12px;
+    color: #e8e8e8;
+    font-size: 11px;
+    z-index: 1000;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    min-width: 150px;
+}
+
+.legend-section {
+    margin-bottom: 8px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-section h4 {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #fff;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
+}
+
+.legend-section:last-child h4 {
+    margin-bottom: 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.legend-item .flag {
+    font-size: 18px;
+}
+
+.zoom-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(22, 33, 62, 0.95);
+    border: 1px solid #0f3460;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #e8e8e8;
+    font-size: 11px;
+    z-index: 1000;
+}
+
+.zoom-info strong {
+    color: #fff;
+}
+
+/* 国家信息面板 */
+.country-info-panel {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    background: rgba(22, 33, 62, 0.95);
+    border: 1px solid rgba(15, 52, 96, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    color: #e8e8e8;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    width: 340px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-flag {
+    font-size: 42px;
+    line-height: 1;
+}
+
+.panel-title-group {
+    flex: 1;
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+.panel-historical {
+    font-size: 11px;
+    color: #8fa3bf;
+}
+
+.panel-section {
+    margin-bottom: 14px;
+}
+
+.panel-section-title {
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 12px;
+    font-size: 12px;
+}
+
+.panel-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.panel-label {
+    color: #8fa3bf;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.panel-value {
+    color: #fff;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.panel-relations {
+    margin-top: 4px;
+}
+
+.relation-row {
+    margin-bottom: 6px;
+}
+
+.relation-row:last-child {
+    margin-bottom: 0;
+}
+
+.relation-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.relation-label.allies {
+    color: #22c55e;
+}
+
+.relation-label.enemies {
+    color: #ef4444;
+}
+
+.relation-value {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.allies-value {
+    color: #22c55e;
+}
+
+.enemies-value {
+    color: #ef4444;
+}
+
+.panel-charts {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chart-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.chart-item {
+    flex: 1;
+    text-align: center;
+}
+
+.chart-title {
+    font-size: 10px;
+    color: #8fa3bf;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chart-container {
+    height: 100px;
+}
+
+.chart-item.full {
+    width: 100%;
+}
+
+#factionChart {
+    width: 100%;
+    height: 300px;
+}
+
+/* 航线起止点发光效果 */
+.arc-start-marker,
+.arc-end-marker {
+    box-shadow: 0 0 6px 2px currentColor;
+}
+
+/* 资源标注样式 */
+.resource-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.resource-marker.oil {
+    background: rgba(139, 69, 19, 0.9);
+}
+
+.resource-marker.gas {
+    background: rgba(255, 140, 0, 0.9);
+}
+
+.resource-marker.river {
+    background: rgba(30, 144, 255, 0.9);
+}
+
+.resource-marker.port {
+    background: rgba(34, 139, 34, 0.9);
+}
+
+.resource-marker.strategic {
+    background: rgba(220, 20, 60, 0.9);
+}
+
+/* 军事基地标注样式 */
+.military-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.military-marker.us {
+    background: rgba(0, 0, 139, 0.9);
+}
+
+.military-marker.russian {
+    background: rgba(139, 0, 0, 0.9);
+}
+
+.military-marker.strategic {
+    background: rgba(128, 0, 128, 0.9);
+}
+
+/* 贸易路线标注 */
+.trade-marker {
+    font-size: 14px;
+}
+
+/* 弹窗样式 */
+.marker-popup {
+    font-size: 12px;
+    line-height: 1.5;
+    background: linear-gradient(145deg, #1e2a4a 0%, #16213e 100%);
+    border: 1px solid #0f3460;
+    border-radius: 8px;
+    padding: 12px;
+    color: #e8e8e8;
+    min-width: 180px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.marker-popup h4 {
+    margin: 0 0 8px 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 6px;
+}
+
+.marker-popup p {
+    margin: 4px 0;
+    color: #b8c5d9;
+    font-size: 12px;
+}
+
+.marker-popup strong {
+    color: #fff;
+    font-weight: 500;
+}
+
+.marker-popup .type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-right: 6px;
+    color: #fff;
+    font-weight: 500;
+}
+
+.marker-popup .type-oil {
+    background: rgba(139, 69, 19, 0.9);
+}
+
+.marker-popup .type-gas {
+    background: rgba(255, 140, 0, 0.9);
+}
+
+.marker-popup .type-us {
+    background: rgba(0, 0, 139, 0.9);
+}
+
+.marker-popup .type-russian {
+    background: rgba(139, 0, 0, 0.9);
+}
+
+.marker-popup .type-shipping {
+    background: rgba(34, 139, 34, 0.9);
+}
+
+/* Leaflet弹窗覆盖 */
+.leaflet-popup-content-wrapper {
+    background: transparent !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+.leaflet-popup-content {
+    margin: 0 !important;
+}
+
+.leaflet-popup-tip {
+    background: #16213e !important;
+}
+
+.leaflet-popup-close-button {
+    color: #fff !important;
+    font-size: 18px !important;
+    padding: 5px 8px !important;
+}
+
+/* 石油输出连线样式 */
+.oil-export-line {
+    stroke: #FFD700;
+    stroke-width: 2;
+    stroke-dasharray: 10, 5;
+    fill: none;
+    opacity: 0.9;
+}
+
+.oil-export-arrow {
+    fill: #FFD700;
+}

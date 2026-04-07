@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中东地区地图 - 精确国界</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+    <header>
+        <h1>🗺️ 中东地区地图</h1>
+        <div class="header-controls">
+            <button class="toggle-btn active" id="btnCountry" title="国家">🗺️</button>
+            <button class="toggle-btn active" id="btnLabel" title="国名">🔤</button>
+            <button class="toggle-btn" id="btnRelation" title="国际关系">🔗</button>
+            <button class="toggle-btn" id="btnResource" title="资源">⛽</button>
+            <button class="toggle-btn" id="btnMilitary" title="军事">⚔️</button>
+            <button class="toggle-btn" id="btnOilExport" title="石油输出">🛢️</button>
+        </div>
+    </header>
+
+    <!-- 国家信息面板 -->
+    <div id="countryInfoPanel" class="country-info-panel" style="display: none;">
+        <div class="panel-header">
+            <div class="panel-flag" id="panelFlag"></div>
+            <div class="panel-title-group">
+                <div class="panel-title" id="panelTitle"></div>
+                <div class="panel-historical" id="panelHistorical"></div>
+            </div>
+        </div>
+        <div class="panel-section">
+            <div class="panel-section-title">基本信息</div>
+            <div class="panel-grid" id="panelGrid"></div>
+        </div>
+        <div class="panel-section">
+            <div class="panel-section-title">国际关系</div>
+            <div class="panel-relations" id="panelRelations"></div>
+        </div>
+        <div class="panel-charts">
+            <div id="factionChart"></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="legend" id="legend"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="./data.js"></script>
+    <script src="./factions.js"></script>
+    <script src="./details.js"></script>
+    <script src="./resources.js"></script>
+    <script src="./geojson.js"></script>
+    <script src="./main.js"></script>
+    <script src="./ui.js"></script>
+    <script src="./app.js"></script>
+</body>
+
+</html>

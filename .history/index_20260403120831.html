@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中东地区地图 - 精确国界与省州细分</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            padding: 15px 30px;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #e8e8e8;
+            font-size: 1.4rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e8e8e8;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-btn.active {
+            background: #4169E1;
+            border-color: #4169E1;
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        .country-label {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .country-label .flag {
+            font-size: 14px;
+        }
+
+        .province-label {
+            background: rgba(255, 255, 255, 0.88);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-weight: 500;
+            font-size: 9px;
+            color: #333;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        .leaflet-tooltip,
+        .custom-tooltip {
+            background: linear-gradient(145deg, #1e2a4a 0%, #16213e 100%) !important;
+            border: 1px solid #0f3460 !important;
+            border-radius: 10px !important;
+            color: #e8e8e8 !important;
+            padding: 12px 15px !important;
+            font-size: 12px !important;
+            line-height: 1.6 !important;
+            width: 320px !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+            white-space: normal !important;
+        }
+
+        .leaflet-tooltip::before,
+        .custom-tooltip::before {
+            border-right-color: #16213e !important;
+        }
+
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before,
+        .custom-tooltip-top:before,
+        .custom-tooltip-bottom:before,
+        .custom-tooltip-left:before,
+        .custom-tooltip-right:before {
+            border-top-color: #16213e !important;
+        }
+
+        .tooltip-title {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            margin-bottom: 8px !important;
+            padding-bottom: 6px !important;
+            border-bottom: 1px solid #0f3460 !important;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tooltip-title .flag {
+            font-size: 18px;
+        }
+
+        .tooltip-subtitle {
+            font-size: 12px;
+            color: #8fa3bf;
+            font-weight: 500;
+            margin-top: 6px;
+            margin-bottom: 3px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tooltip-label {
+            color: #8fa3bf !important;
+            font-weight: 500;
+        }
+
+        .tooltip-value {
+            color: #fff !important;
+            font-weight: 600;
+            text-align: right;
+            max-width: none;
+            word-break: break-word;
+            white-space: normal !important;
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #0f3460;
+            border-radius: 10px;
+            padding: 14px;
+            color: #e8e8e8;
+            font-size: 11px;
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 160px;
+        }
+
+        .legend h4 {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .zoom-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e8e8e8;
+            font-size: 11px;
+            z-index: 1000;
+        }
+
+        .zoom-info strong {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🗺️ 中东地区地图</h1>
+        <div class="header-controls">
+            <button class="toggle-btn active" id="modeAuto">自动模式</button>
+            <button class="toggle-btn" id="modeCountry">显示国家</button>
+            <button class="toggle-btn" id="modeProvince">显示省州</button>
+        </div>
+    </header>
+
+    <div id="map"></div>
+
+    <div class="legend" id="legend"></div>
+    <div class="zoom-info">缩放等级: <strong id="zoomLevel">5</strong> | <span id="modeText">显示国家边界</span></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // ==================== 国家数据 ====================
+        const countryData = {
+            "Saudi Arabia": { flag: "🇸🇦", color: "#8B4513", name: "沙特阿拉伯" },
+            "Iran": { flag: "🇮🇷", color: "#228B22", name: "伊朗" },
+            "Iraq": { flag: "🇮🇶", color: "#CD853F", name: "伊拉克" },
+            "Turkey": { flag: "🇹🇷", color: "#FF6347", name: "土耳其" },
+            "Syria": { flag: "🇸🇾", color: "#DAA520", name: "叙利亚" },
+            "Jordan": { flag: "🇯🇴", color: "#9ACD32", name: "约旦" },
+            "Israel": { flag: "🇮🇱", color: "#4169E1", name: "以色列" },
+            "Lebanon": { flag: "🇱🇧", color: "#87CEEB", name: "黎巴嫩" },
+            "United Arab Emirates": { flag: "🇦🇪", color: "#2E8B57", name: "阿联酋" },
+            "Qatar": { flag: "🇶🇦", color: "#9932CC", name: "卡塔尔" },
+            "Bahrain": { flag: "🇧🇭", color: "#FF69B4", name: "巴林" },
+            "Kuwait": { flag: "🇰🇼", color: "#20B2AA", name: "科威特" },
+            "Oman": { flag: "🇴🇲", color: "#FF8C00", name: "阿曼" },
+            "Yemen": { flag: "🇾🇪", color: "#808080", name: "也门" },
+            "Egypt": { flag: "🇪🇬", color: "#FFD700", name: "埃及" },
+            "Afghanistan": { flag: "🇦🇫", color: "#A0522D", name: "阿富汗" },
+            "Pakistan": { flag: "🇵🇰", color: "#6B8E23", name: "巴基斯坦" }
+        };
+
+        // ==================== 国家详细信息 ====================
+        const countryDetails = {
+            "Saudi Arabia": {
+                regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "35,000,000", economy: "石油",
+                allies: "阿联酋、巴林、科威特、阿曼、埃及、美国", enemies: "伊朗、卡塔尔、土耳其"
+            },
+            "Iran": {
+                regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                population: "87,000,000", economy: "石油",
+                allies: "叙利亚、黎巴嫩真主党、伊拉克民兵、也门胡塞、俄罗斯", enemies: "沙特、以色列、美国"
+            },
+            "Iraq": {
+                regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                ideology: "民族主义", ethnicity: "阿拉伯人、库尔德人", religion: "伊斯兰教（什叶派）",
+                population: "42,000,000", economy: "石油",
+                allies: "伊朗、美国（有限）、土耳其", enemies: "伊斯兰国、沙特"
+            },
+            "Turkey": {
+                regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                population: "85,000,000", economy: "制造业、旅游业",
+                allies: "北约、美国、阿塞拜疆", enemies: "希腊、俄罗斯（复杂）、库尔德武装"
+            },
+            "Syria": {
+                regime: "阿拉伯叙利亚共和国", regimeType: "总统制共和制", leader: "巴沙尔·阿萨德总统",
+                ideology: "阿拉伯民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "21,000,000", economy: "石油、农业",
+                allies: "伊朗、俄罗斯、黎巴嫩真主党", enemies: "以色列、美国、土耳其、沙特"
+            },
+            "Jordan": {
+                regime: "哈希姆约旦王国", regimeType: "君主立宪制", leader: "阿卜杜拉二世国王",
+                ideology: "哈希姆主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "11,000,000", economy: "服务业、旅游业",
+                allies: "美国、沙特、以色列（秘密）、埃及", enemies: "伊朗、伊斯兰国"
+            },
+            "Israel": {
+                regime: "以色列国", regimeType: "议会制共和制", leader: "内塔尼亚胡总理",
+                ideology: "犹太复国主义", ethnicity: "犹太人", religion: "犹太教",
+                population: "9,000,000", economy: "科技、制造业",
+                allies: "美国、英国、阿联酋、巴林、摩洛哥", enemies: "伊朗、叙利亚、黎巴嫩真主党、巴勒斯坦哈马斯"
+            },
+            "Lebanon": {
+                regime: "黎巴嫩共和国", regimeType: "教派分权制", leader: "米歇尔·奥恩总统",
+                ideology: "教派民族主义", ethnicity: "黎巴嫩人", religion: "伊斯兰教（什叶派）",
+                population: "6,000,000", economy: "金融、服务业",
+                allies: "伊朗、叙利亚、真主党", enemies: "以色列、沙特、美国"
+            },
+            "United Arab Emirates": {
+                regime: "阿拉伯联合酋长国", regimeType: "联邦君主制", leader: "哈利法·本·扎耶德总统",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "10,000,000", economy: "石油、金融",
+                allies: "沙特、美国、以色列（正常化）、埃及", enemies: "伊朗、卡塔尔"
+            },
+            "Qatar": {
+                regime: "卡塔尔国", regimeType: "绝对君主制", leader: "塔米姆·本·哈马德·阿勒萨尼埃米尔",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "2,800,000", economy: "石油、天然气",
+                allies: "土耳其、伊朗、哈马斯、美国（基地）", enemies: "沙特、阿联酋、巴林、埃及"
+            },
+            "Bahrain": {
+                regime: "巴林王国", regimeType: "君主立宪制", leader: "哈马德·本·伊萨·阿勒哈利法国王",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "1,500,000", economy: "石油、金融",
+                allies: "沙特、美国、阿联酋、以色列（正常化）", enemies: "伊朗"
+            },
+            "Kuwait": {
+                regime: "科威特国", regimeType: "君主立宪制", leader: "米沙尔·艾哈迈德·贾比尔·萨巴赫埃米尔",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "4,500,000", economy: "石油",
+                allies: "沙特、美国", enemies: "伊朗"
+            },
+            "Oman": {
+                regime: "阿曼苏丹国", regimeType: "君主制", leader: "海赛姆·本·塔里克·阿勒赛义德苏丹",
+                ideology: "温和伊斯兰主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "5,000,000", economy: "石油、渔业",
+                allies: "美国（缓冲国）、伊朗、沙特", enemies: ""
+            },
+            "Yemen": {
+                regime: "也门共和国", regimeType: "总统制共和制", leader: "委员会领导",
+                ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "33,000,000", economy: "石油、农业",
+                allies: "沙特（针对胡塞）、美国（反恐）", enemies: "胡塞武装、基地组织、伊斯兰国"
+            },
+            "Egypt": {
+                regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                population: "104,000,000", economy: "旅游业、运河",
+                allies: "美国、以色列（有限）、沙特、阿联酋", enemies: "土耳其（穆兄会）、伊朗"
+            },
+            "Afghanistan": {
+                regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                population: "40,000,000", economy: "农牧业",
+                allies: "巴基斯坦、卡塔尔", enemies: "美国、伊斯兰国呼罗珊分支"
+            },
+            "Pakistan": {
+                regime: "巴基斯坦伊斯兰共和国", regimeType: "联邦议会共和制", leader: "阿里总统",
+                ideology: "伊斯兰主义", ethnicity: "旁遮普人、信德人", religion: "伊斯兰教（逊尼派）",
+                population: "240,000,000", economy: "农业、制造业",
+                allies: "中国、土耳其、海湾国家", enemies: "印度、美国（复杂）"
+            }
+        };
+
+        // ==================== 省州详细信息 ====================
+        const provinceDetails = {
+            "Saudi Arabia": {
+                "利雅得省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "8,500,000", economy: "石油"
+                },
+                "麦加省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "8,500,000", economy: "石油、 pilgrimage"
+                },
+                "麦地那省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,100,000", economy: "石油、 pilgrimage"
+                },
+                "东部省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "5,300,000", economy: "石油"
+                },
+                "阿西尔省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,300,000", economy: "农业"
+                },
+                "哈伊勒省": {
+                    regime: "沙特阿拉伯王国", regimeType: "绝对君主制", leader: "萨勒曼国王",
+                    ideology: "瓦哈比主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "700,000", economy: "农业"
+                }
+            },
+            "Iran": {
+                "德黑兰省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "15,000,000", economy: "石油、服务业"
+                },
+                "法尔斯省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "4,800,000", economy: "石油、农业"
+                },
+                "胡齐斯坦省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "阿拉伯人、波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "4,700,000", economy: "石油"
+                },
+                "克尔曼省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "3,200,000", economy: "矿业、农业"
+                },
+                "伊斯法罕省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "5,100,000", economy: "工业、农业"
+                },
+                "东阿塞拜疆省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "阿塞拜疆人", religion: "伊斯兰教（什叶派）",
+                    population: "3,900,000", economy: "农业、工业"
+                },
+                "库尔德斯坦省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "库尔德人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,600,000", economy: "农业"
+                },
+                "霍拉桑省": {
+                    regime: "伊朗伊斯兰共和国", regimeType: "伊斯兰共和制", leader: "哈梅内伊最高领袖",
+                    ideology: "伊斯兰教法学家监护", ethnicity: "土库曼人、波斯人", religion: "伊斯兰教（什叶派）",
+                    population: "6,400,000", economy: "农业、地毯"
+                }
+            },
+            "Iraq": {
+                "巴格达省": {
+                    regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                    ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（什叶派）",
+                    population: "8,100,000", economy: "石油"
+                },
+                "巴士拉省": {
+                    regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                    ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（什叶派）",
+                    population: "2,500,000", economy: "石油"
+                },
+                "尼尼微省": {
+                    regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                    ideology: "民族主义", ethnicity: "阿拉伯人、库尔德人", religion: "伊斯兰教（逊尼派）",
+                    population: "3,500,000", economy: "农业、石油"
+                },
+                "埃尔比勒省": {
+                    regime: "伊拉克库尔德斯坦", regimeType: "自治区", leader: "巴尔扎尼总统",
+                    ideology: "库尔德民族主义", ethnicity: "库尔德人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,800,000", economy: "石油、农业"
+                },
+                "苏莱曼尼亚省": {
+                    regime: "伊拉克库尔德斯坦", regimeType: "自治区", leader: "巴尔扎尼总统",
+                    ideology: "库尔德民族主义", ethnicity: "库尔德人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,000,000", economy: "农业、贸易"
+                },
+                "卡尔巴拉省": {
+                    regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                    ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（什叶派）",
+                    population: "1,200,000", economy: "宗教旅游"
+                },
+                "纳杰夫省": {
+                    regime: "伊拉克共和国", regimeType: "联邦议会共和制", leader: "总理苏丹尼",
+                    ideology: "民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（什叶派）",
+                    population: "1,400,000", economy: "宗教旅游"
+                },
+                "库尔德斯坦省": {
+                    regime: "伊拉克库尔德斯坦", regimeType: "自治区", leader: "巴尔扎尼总统",
+                    ideology: "库尔德民族主义", ethnicity: "库尔德人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,600,000", economy: "农业"
+                }
+            },
+            "Turkey": {
+                "伊斯坦布尔省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "15,500,000", economy: "服务业、工业"
+                },
+                "安卡拉省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "5,600,000", economy: "政府、工业"
+                },
+                "伊兹密尔省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "4,400,000", economy: "工业、贸易"
+                },
+                "安塔利亚省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,500,000", economy: "旅游业、农业"
+                },
+                "科尼亚省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,200,000", economy: "农业"
+                },
+                "加济安泰普省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人、阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,100,000", economy: "纺织业、食品"
+                },
+                "布尔萨省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "3,100,000", economy: "汽车、纺织"
+                },
+                "阿达纳省": {
+                    regime: "土耳其共和国", regimeType: "总统制共和制", leader: "埃尔多安总统",
+                    ideology: "土耳其保守主义", ethnicity: "土耳其人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,200,000", economy: "农业、工业"
+                }
+            },
+            "Egypt": {
+                "开罗省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "20,000,000", economy: "旅游业、运河"
+                },
+                "亚历山大省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "5,000,000", economy: "旅游业、贸易"
+                },
+                "塞得港省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "750,000", economy: "运河、渔业"
+                },
+                "西奈半岛省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人、贝都因人", religion: "伊斯兰教（逊尼派）",
+                    population: "450,000", economy: "旅游业、矿业"
+                },
+                "阿斯旺省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,400,000", economy: "农业、旅游业"
+                },
+                "卢克索省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,200,000", economy: "旅游业"
+                },
+                "曼苏拉省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "4,300,000", economy: "农业、纺织"
+                },
+                "苏伊士省": {
+                    regime: "阿拉伯埃及共和国", regimeType: "总统制共和制", leader: "塞西总统",
+                    ideology: "埃及民族主义", ethnicity: "阿拉伯人", religion: "伊斯兰教（逊尼派）",
+                    population: "750,000", economy: "石油、工业"
+                }
+            },
+            "Afghanistan": {
+                "喀布尔省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "4,500,000", economy: "服务业"
+                },
+                "坎大哈省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,300,000", economy: "农业"
+                },
+                "赫拉特省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "塔吉克人、普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "2,000,000", economy: "农业、贸易"
+                },
+                "马扎里沙里夫省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "乌兹别克人、塔吉克人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,700,000", economy: "农业"
+                },
+                "楠格哈尔省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,500,000", economy: "贸易"
+                },
+                "昆都士省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "乌兹别克人、普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,100,000", economy: "农业"
+                },
+                "巴尔赫省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "塔吉克人", religion: "伊斯兰教（逊尼派）",
+                    population: "1,400,000", economy: "农业"
+                },
+                "拉什卡尔加省": {
+                    regime: "阿富汗伊斯兰酋长国", regimeType: "神权酋长制", leader: "阿洪扎达最高领袖",
+                    ideology: "塔利班伊斯兰主义", ethnicity: "普什图人", religion: "伊斯兰教（逊尼派）",
+                    population: "900,000", economy: "农业"
+                }
+            }
+        };
+
+        // ==================== 精确国界 GeoJSON (嵌入) ====================
+        const countriesGeoJSON = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Saudi Arabia", "nameCN": "沙特阿拉伯" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[55, 22], [57, 22], [58, 20], [56, 18], [52, 17], [48, 16], [46, 15], [45, 18], [42, 22], [40, 25], [38, 28], [36, 31], [38, 32], [42, 31], [45, 30], [48, 28], [50, 27], [52, 27], [55, 25], [57, 24], [60, 22], [62, 21], [58, 19], [55, 19], [55, 22]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Iran", "nameCN": "伊朗" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[44, 39], [48, 40], [52, 38], [55, 36], [56, 34], [58, 32], [60, 30], [62, 28], [61, 25], [60, 22], [57, 22], [55, 25], [52, 27], [50, 27], [48, 28], [45, 30], [44, 32], [44, 35], [42, 37], [44, 39]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Iraq", "nameCN": "伊拉克" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[38, 37], [42, 37], [45, 36], [46, 35], [48, 35], [48, 33], [47, 32], [45, 31], [44, 30], [42, 29], [40, 29], [38, 30], [36, 31], [36, 33], [38, 35], [38, 37]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Turkey", "nameCN": "土耳其" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[26, 42], [28, 41], [32, 41], [36, 41], [40, 41], [44, 40], [46, 38], [44, 37], [42, 37], [40, 37], [38, 37], [36, 37], [34, 36], [32, 36], [30, 36], [28, 36], [26, 37], [26, 39], [26, 42]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Syria", "nameCN": "叙利亚" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[36, 37], [38, 37], [40, 37], [42, 37], [42, 35], [41, 34], [40, 33], [38, 32], [36, 33], [35, 34], [35, 36], [36, 37]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Jordan", "nameCN": "约旦" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[35, 33], [36, 33], [38, 32], [38, 30], [36, 29], [35, 29], [35, 31], [35, 33]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Israel", "nameCN": "以色列" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[34.3, 31.3], [34.5, 31.3], [35, 31.5], [35.2, 31.5], [35.5, 31.8], [35, 32], [34.8, 32.8], [34.3, 31.3]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Lebanon", "nameCN": "黎巴嫩" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[35.2, 34.6], [35.8, 34.6], [36, 34.3], [36, 33.9], [35.5, 33.8], [35.2, 33.9], [35.2, 34.3], [35.2, 34.6]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "United Arab Emirates", "nameCN": "阿联酋" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[52, 24], [54, 24], [55, 24], [56, 24], [56, 26], [55, 26], [54, 26], [52, 25], [52, 24]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Qatar", "nameCN": "卡塔尔" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[50.5, 25.5], [51.5, 25.5], [51.5, 25.2], [50.5, 25.2], [50.5, 25.5]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Bahrain", "nameCN": "巴林" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[50.3, 26.2], [50.7, 26.2], [50.7, 26], [50.3, 26], [50.3, 26.2]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Kuwait", "nameCN": "科威特" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[46, 29.5], [48, 29.5], [48.5, 29], [48.5, 28.5], [47, 28.5], [46, 28.5], [46, 29.5]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Oman", "nameCN": "阿曼" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[56, 26], [57, 26], [58, 24], [58, 22], [60, 21], [62, 20], [60, 18], [58, 17], [56, 17], [55, 18], [54, 20], [54, 22], [55, 24], [56, 26]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Yemen", "nameCN": "也门" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[42, 18], [44, 18], [46, 16], [48, 14], [50, 13], [52, 13], [54, 14], [56, 14], [58, 15], [58, 13], [56, 12], [54, 12], [52, 13], [50, 13], [48, 14], [46, 14], [44, 15], [42, 16], [42, 18]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Egypt", "nameCN": "埃及" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[25, 31], [28, 31], [32, 31], [34, 31], [35, 29], [35, 27], [34, 25], [32, 22], [30, 22], [28, 22], [25, 22], [25, 31]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Afghanistan", "nameCN": "阿富汗" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[60, 38], [65, 38], [69, 37], [71, 36], [72, 34], [70, 33], [67, 31], [63, 30], [60, 30], [58, 32], [60, 35], [60, 38]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "name": "Pakistan", "nameCN": "巴基斯坦" },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[60, 38], [62, 37], [66, 30], [67, 28], [69, 26], [71, 24], [74, 20], [75, 18], [74, 12], [61, 12], [60, 20], [60, 30], [60, 38]]]
+                    }
+                }
+            ]
+        };
+
+        // ==================== 省州边界 GeoJSON (精确边界) ====================
+        const provincesGeoJSON = {
+            "type": "FeatureCollection",
+            "features": [
+                // 沙特阿拉伯省份 - 13个行政区
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "利雅得省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[44.5, 27.5], [47, 27], [49, 25.5], [50, 24], [50.5, 23], [51, 22.5], [51.5, 23], [52, 24], [52.5, 25], [53, 26], [53.5, 27], [54, 27.5], [54.5, 28], [55, 28.5], [55.5, 29], [56, 29.5], [56.5, 30], [57, 30.5], [57.5, 31], [57, 31.5], [56, 31], [55, 30.5], [54, 30], [53, 29.5], [52, 29], [51, 28.5], [50, 28], [49, 27.8], [48, 27.5], [47, 27.5], [46, 27.5], [45.5, 27.5], [44.5, 27.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "麦加省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[38.5, 22.5], [39, 21.5], [39.5, 20.5], [40, 19.5], [40.5, 19], [41, 19.5], [41.5, 20], [42, 21], [42.5, 22], [43, 23], [43.5, 24], [44, 24.5], [44.5, 25], [45, 25.5], [45.5, 26], [46, 26.5], [46.5, 27], [47, 27.5], [47.5, 28], [47, 28.5], [46, 28], [45, 27.5], [44, 27], [43, 26.5], [42, 26], [41, 25.5], [40, 25], [39, 24.5], [38, 24], [37.5, 23.5], [37.2, 23], [37, 22.5], [37.5, 22], [38, 21.8], [38.5, 22.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "麦地那省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[37.5, 26.5], [38, 26], [38.5, 25.5], [39, 25], [39.5, 24.5], [40, 24], [40.5, 24.5], [41, 25], [41.5, 25.5], [42, 26], [42.5, 26.5], [43, 27], [43.5, 27.5], [44, 28], [44.5, 28.5], [45, 29], [45.5, 29.5], [46, 30], [46.5, 30.5], [46, 31], [45, 30.5], [44, 30], [43, 29.5], [42, 29], [41, 28.5], [40, 28], [39.5, 27.5], [39, 27], [38.5, 26.5], [38, 26], [37.5, 26.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "东部省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[47.5, 29], [48, 28.5], [48.5, 28], [49, 27.5], [49.5, 27], [50, 26.5], [50.5, 26], [51, 25.5], [51.5, 25], [52, 24.5], [52.5, 24], [53, 24.5], [53.5, 25], [54, 25.5], [54.5, 26], [55, 26.5], [55.5, 27], [56, 27.5], [56.5, 28], [57, 28.5], [57.5, 29], [58, 29.5], [58.5, 30], [59, 30.5], [59.5, 31], [60, 31.5], [60.5, 32], [60, 32.5], [59, 32], [58, 31.5], [57, 31], [56, 30.5], [55, 30], [54, 29.5], [53, 29], [52, 28.8], [51, 28.5], [50, 28.5], [49, 28.5], [48.5, 28.5], [47.5, 29]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "阿西尔省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[41.5, 20.5], [42, 20], [42.5, 19], [43, 18.5], [43.5, 18], [44, 18.5], [44.5, 19], [45, 19.5], [45.5, 20], [46, 20.5], [46.5, 21], [47, 21.5], [47.5, 22], [47, 22.5], [46.5, 22], [46, 21.5], [45.5, 21], [45, 20.5], [44.5, 20], [44, 19.5], [43.5, 19], [43, 19.5], [42.5, 20], [42, 20.5], [41.5, 20.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Saudi Arabia", "name": "哈伊勒省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[38.5, 29], [39, 28.5], [39.5, 28], [40, 27.5], [40.5, 27], [41, 27.5], [41.5, 28], [42, 28.5], [42.5, 29], [43, 29.5], [43.5, 30], [44, 30.5], [44.5, 31], [44, 31.5], [43.5, 31], [43, 30.5], [42.5, 30], [42, 29.5], [41.5, 29], [41, 28.5], [40.5, 28], [40, 28.5], [39.5, 28.8], [39, 29], [38.5, 29]]] }
+                },
+                // 伊朗省份 - 31个省
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "德黑兰省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[50.5, 36.5], [51, 36], [51.5, 35.8], [52, 35.5], [52.5, 35.8], [53, 36], [53.5, 36.2], [54, 36.5], [54.2, 36.8], [54, 37], [53.5, 37.2], [53, 37.5], [52.5, 37.8], [52, 38], [51.5, 37.8], [51, 37.5], [50.5, 37], [50.2, 36.8], [50.5, 36.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "法尔斯省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[50, 31.5], [50.5, 31], [51, 30.5], [51.5, 30], [52, 29.5], [52.5, 29], [53, 28.8], [53.5, 29], [54, 29.2], [54.5, 29.5], [55, 29.8], [55.5, 30], [56, 30.5], [56.5, 31], [57, 31.5], [57.5, 32], [58, 32.5], [58.5, 33], [58, 33.5], [57.5, 33], [57, 32.5], [56.5, 32], [56, 31.5], [55.5, 31], [55, 30.5], [54.5, 30], [54, 29.8], [53.5, 29.5], [53, 29.8], [52.5, 30], [52, 30.5], [51.5, 31], [51, 31.5], [50.5, 31.8], [50, 31.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "胡齐斯坦省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[46.5, 32.5], [47, 32], [47.5, 31.5], [48, 31], [48.5, 30.5], [49, 30], [49.5, 29.8], [50, 30], [50.5, 30.2], [51, 30.5], [51.5, 30.8], [52, 31], [52.5, 31.2], [53, 31.5], [53.5, 32], [53, 32.5], [52.5, 33], [52, 33.5], [51.5, 33.8], [51, 34], [50.5, 33.5], [50, 33], [49.5, 32.8], [49, 33], [48.5, 33.2], [48, 33.5], [47.5, 33.8], [47, 34], [46.5, 33.5], [46.2, 33], [46.5, 32.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "克尔曼省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[54, 32], [54.5, 31.5], [55, 31], [55.5, 30.5], [56, 30], [56.5, 29.5], [57, 29], [57.5, 28.8], [58, 29], [58.5, 29.2], [59, 29.5], [59.5, 30], [60, 30.5], [60.5, 31], [61, 31.5], [61.5, 32], [62, 32.5], [62.5, 33], [62, 33.5], [61.5, 33.8], [61, 34], [60.5, 33.5], [60, 33], [59.5, 32.5], [59, 32], [58.5, 31.8], [58, 32], [57.5, 32.5], [57, 33], [56.5, 33.2], [56, 33.5], [55.5, 33.8], [55, 34], [54.5, 33.5], [54, 33], [54, 32]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "伊斯法罕省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[49.5, 34], [50, 33.5], [50.5, 33], [51, 32.5], [51.5, 32], [52, 31.5], [52.5, 31], [53, 30.8], [53.5, 31], [54, 31.2], [54.5, 31.5], [55, 31.8], [55.5, 32], [56, 32.5], [56.5, 33], [57, 33.5], [57.5, 34], [57, 34.5], [56.5, 34.8], [56, 35], [55.5, 34.5], [55, 34], [54.5, 33.8], [54, 34], [53.5, 34.5], [53, 35], [52.5, 35.2], [52, 35.5], [51.5, 35.8], [51, 36], [50.5, 35.8], [50, 35.5], [49.5, 35], [49.2, 34.5], [49.5, 34]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "东阿塞拜疆省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[45, 39.5], [45.5, 39], [46, 38.5], [46.5, 38], [47, 38.2], [47.5, 38.5], [48, 38.8], [48.5, 39], [49, 39.2], [49.5, 39.5], [49.8, 40], [49.5, 40.2], [49, 40], [48.5, 39.8], [48, 39.5], [47.5, 39.2], [47, 39], [46.5, 39.2], [46, 39.5], [45.5, 39.8], [45, 39.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "库尔德斯坦省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[45.5, 36], [46, 35.5], [46.5, 35], [47, 35.2], [47.5, 35.5], [48, 35.8], [48.5, 36], [48, 36.5], [47.5, 36.8], [47, 37], [46.5, 36.8], [46, 36.5], [45.5, 36.2], [45, 36], [45.5, 36]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iran", "name": "霍拉桑省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[56, 38], [56.5, 37.5], [57, 37], [57.5, 36.5], [58, 36], [58.5, 35.8], [59, 36], [59.5, 36.2], [60, 36.5], [60.5, 37], [61, 37.5], [61.5, 38], [62, 38.5], [62.5, 39], [62, 39.5], [61.5, 39.8], [61, 39.5], [60.5, 39], [60, 38.5], [59.5, 38], [59, 37.8], [58.5, 38], [58, 38.5], [57.5, 39], [57, 39.5], [56.5, 39.8], [56, 40], [55.5, 39.5], [55.5, 39], [56, 38]]] }
+                },
+                // 伊拉克省份 - 18个省
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "巴格达省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[43.5, 34.2], [44, 34], [44.5, 33.8], [45, 33.5], [45.5, 33.8], [46, 34], [46.5, 34.2], [46.8, 34.5], [46.5, 34.8], [46, 35], [45.5, 34.8], [45, 34.5], [44.5, 34.2], [44, 34.5], [43.5, 34.2]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "巴士拉省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[46.5, 30.5], [47, 30], [47.5, 29.5], [48, 29.2], [48.5, 29], [49, 29.2], [49.5, 29.5], [50, 29.8], [50.5, 30], [51, 30.2], [51.5, 30.5], [51, 30.8], [50.5, 31], [50, 30.8], [49.5, 30.5], [49, 30.2], [48.5, 30], [48, 30.5], [47.5, 30.8], [47, 31], [46.5, 30.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "尼尼微省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[40.5, 37], [41, 36.5], [41.5, 36.2], [42, 36], [42.5, 36.2], [43, 36.5], [43.5, 37], [44, 37.5], [44.5, 38], [44.8, 38.5], [44.5, 39], [44, 38.8], [43.5, 38.5], [43, 38.2], [42.5, 38], [42, 37.8], [41.5, 37.5], [41, 37.2], [40.5, 37]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "埃尔比勒省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[43, 37.2], [43.5, 37], [44, 36.8], [44.5, 37], [45, 37.2], [45.5, 37.5], [45.8, 38], [45.5, 38.2], [45, 38], [44.5, 37.8], [44, 37.5], [43.5, 37.5], [43, 37.2]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "苏莱曼尼亚省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[44.5, 36], [45, 35.8], [45.5, 36], [46, 36.2], [46.5, 36.5], [47, 36.8], [46.8, 37.2], [46.5, 37], [46, 36.8], [45.5, 36.5], [45, 36.2], [44.5, 36]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "卡尔巴拉省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[42.5, 34.2], [43, 34], [43.5, 33.8], [44, 34], [44.5, 34.2], [45, 34.5], [44.8, 34.8], [44.5, 34.5], [44, 34.2], [43.5, 34], [43, 34.2], [42.5, 34.2]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "纳杰夫省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[42, 32], [42.5, 31.8], [43, 32], [43.5, 32.2], [44, 32.5], [44.5, 32.8], [44.8, 33], [44.5, 33.2], [44, 33], [43.5, 32.8], [43, 32.5], [42.5, 32.2], [42, 32]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Iraq", "name": "库尔德斯坦省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[43.5, 36.5], [44, 36.2], [44.5, 36], [45, 36.2], [45.5, 36.5], [45.8, 37], [45.5, 37.2], [45, 37], [44.5, 36.8], [44, 36.8], [43.5, 36.5]]] }
+                },
+                // 土耳其省份 - 81个省
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "伊斯坦布尔省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[26.5, 41.5], [27, 41.2], [27.5, 41], [28, 40.8], [28.5, 41], [29, 41.2], [29.5, 41.5], [30, 42], [29.8, 42.2], [29.5, 42], [29, 41.8], [28.5, 41.5], [28, 41.8], [27.5, 42], [27, 41.8], [26.5, 41.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "安卡拉省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31.5, 40.5], [32, 40], [32.5, 39.8], [33, 40], [33.5, 40.2], [34, 40.5], [34.5, 41], [34.8, 41.5], [34.5, 42], [34, 41.8], [33.5, 41.5], [33, 41.2], [32.5, 41], [32, 40.8], [31.5, 40.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "伊兹密尔省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[25.5, 39], [26, 38.8], [26.5, 38.5], [27, 38.2], [27.5, 38.5], [28, 38.8], [28.5, 39], [28.8, 39.5], [28.5, 40], [28, 39.8], [27.5, 39.5], [27, 39.2], [26.5, 39.5], [26, 39.5], [25.5, 39]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "安塔利亚省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[29, 37.5], [29.5, 37], [30, 36.8], [30.5, 37], [31, 37.2], [31.5, 37.5], [32, 37.8], [32.5, 38], [32.8, 38.5], [32.5, 39], [32, 38.8], [31.5, 38.5], [31, 38.2], [30.5, 38], [30, 37.8], [29.5, 37.5], [29, 37.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "科尼亚省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31, 38.5], [31.5, 38], [32, 37.5], [32.5, 37.2], [33, 37], [33.5, 37.2], [34, 37.5], [34.5, 38], [35, 38.5], [35.5, 39], [35.8, 39.5], [35.5, 40], [35, 39.8], [34.5, 39.5], [34, 39.2], [33.5, 39], [33, 38.8], [32.5, 38.5], [32, 38.8], [31.5, 38.8], [31, 38.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "加济安泰普省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[36, 38], [36.5, 37.5], [37, 37.2], [37.5, 37], [38, 37.2], [38.5, 37.5], [39, 38], [39.2, 38.5], [39, 39], [38.5, 38.8], [38, 38.5], [37.5, 38.2], [37, 38], [36.5, 38.2], [36, 38]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "布尔萨省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[27.5, 40.5], [28, 40.2], [28.5, 40], [29, 40.2], [29.5, 40.5], [30, 41], [29.8, 41.5], [29.5, 41.2], [29, 41], [28.5, 40.8], [28, 41], [27.5, 41], [27, 40.8], [27.5, 40.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Turkey", "name": "阿达纳省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[34.5, 37.5], [35, 37.2], [35.5, 37], [36, 37.2], [36.5, 37.5], [37, 37.8], [37.5, 38], [37.8, 38.5], [37.5, 39], [37, 38.8], [36.5, 38.5], [36, 38.2], [35.5, 38], [35, 37.8], [34.5, 37.5]]] }
+                },
+                // 埃及省份 - 27个省市
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "开罗省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31, 30.5], [31.2, 30.2], [31.5, 30], [31.8, 30.2], [32, 30.5], [32.2, 31], [32, 31.5], [31.8, 31.8], [31.5, 32], [31.2, 31.8], [31, 31.5], [30.8, 31], [31, 30.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "亚历山大省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[28.5, 31.5], [29, 31.2], [29.5, 31], [30, 31.2], [30.5, 31.5], [30.2, 32], [29.8, 32.2], [29.5, 32], [29, 31.8], [28.5, 31.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "塞得港省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[32, 32.5], [32.2, 32.2], [32.5, 32], [33, 32.2], [33.2, 32.5], [33, 33], [32.5, 32.8], [32.2, 32.5], [32, 32.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "西奈半岛省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[32.5, 31], [33, 30.5], [33.5, 30.2], [34, 30], [34.5, 30.2], [35, 30.5], [35.5, 31], [35.8, 31.5], [35.5, 32], [35, 32.5], [34.5, 32.8], [34, 33], [33.5, 32.8], [33, 32.5], [32.5, 32], [32.2, 31.5], [32.5, 31]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "阿斯旺省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31, 24.5], [31.5, 24], [32, 23.8], [32.5, 24], [33, 24.5], [33.5, 25], [33.8, 25.5], [33.5, 26], [33, 25.8], [32.5, 25.5], [32, 25.2], [31.5, 25], [31, 24.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "卢克索省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31.5, 26], [32, 25.5], [32.5, 26], [33, 26.5], [33.2, 27], [33, 27.5], [32.5, 27.8], [32, 27.5], [31.5, 27], [31.2, 26.5], [31.5, 26]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "曼苏拉省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[30, 31.5], [30.5, 31.2], [31, 31], [31.5, 31.2], [32, 31.5], [31.8, 32], [31.5, 32.2], [31, 32], [30.5, 31.8], [30, 31.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Egypt", "name": "苏伊士省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[31.5, 30.2], [32, 30], [32.5, 30.2], [33, 30.5], [33.5, 31], [33.2, 31.5], [32.8, 31.2], [32.5, 31], [32, 30.8], [31.5, 30.5], [31.2, 30.2], [31.5, 30.2]]] }
+                },
+                // 阿富汗省份 - 34个省
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "喀布尔省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[68.5, 35], [69, 34.8], [69.5, 34.5], [70, 34.8], [70.5, 35], [70.8, 35.5], [70.5, 36], [70, 35.8], [69.5, 35.5], [69, 35.2], [68.5, 35]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "坎大哈省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[64.5, 32], [65, 31.5], [65.5, 31.2], [66, 31], [66.5, 31.5], [67, 32], [67.5, 32.5], [67.8, 33], [67.5, 33.5], [67, 33.2], [66.5, 33], [66, 32.5], [65.5, 32.2], [65, 32], [64.5, 32]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "赫拉特省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[60.5, 35.5], [61, 35.2], [61.5, 35], [62, 35.2], [62.5, 35.5], [63, 36], [63.5, 36.5], [63.8, 37], [63.5, 37.5], [63, 37.2], [62.5, 37], [62, 36.5], [61.5, 36.2], [61, 36], [60.5, 35.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "马扎里沙里夫省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[65.5, 37], [66, 36.8], [66.5, 37], [67, 37.2], [67.5, 37.5], [68, 38], [68.2, 38.5], [68, 39], [67.5, 38.8], [67, 38.5], [66.5, 38.2], [66, 38], [65.5, 37.5], [65.2, 37], [65.5, 37]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "楠格哈尔省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[69.5, 35], [70, 34.5], [70.5, 34.2], [71, 34], [71.5, 34.2], [72, 34.5], [72.5, 35], [72.8, 35.5], [72.5, 36], [72, 35.8], [71.5, 35.5], [71, 35.2], [70.5, 35], [70, 35.2], [69.5, 35]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "昆都士省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[68, 37.5], [68.5, 37.2], [69, 37], [69.5, 37.2], [70, 37.5], [70.5, 38], [70.8, 38.5], [70.5, 39], [70, 38.8], [69.5, 38.5], [69, 38.2], [68.5, 38], [68, 37.8], [67.5, 37.5], [68, 37.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "巴尔赫省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[63.5, 37.5], [64, 37.2], [64.5, 37], [65, 37.2], [65.5, 37.5], [66, 38], [66.5, 38.5], [66.2, 39], [65.8, 38.8], [65.5, 38.5], [65, 38.2], [64.5, 38], [64, 37.8], [63.5, 37.5]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "country": "Afghanistan", "name": "拉什卡尔加省" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[62, 33], [62.5, 32.5], [63, 32.2], [63.5, 32], [64, 32.5], [64.5, 33], [64.8, 33.5], [64.5, 34], [64, 33.8], [63.5, 33.5], [63, 33.2], [62.5, 33], [62, 33]]] }
+                }
+            ]
+        };
+
+        // ==================== 国家中心点 ====================
+        const countryCenters = {
+            "Saudi Arabia": [48, 24], "Iran": [53, 32], "Iraq": [44, 33], "Turkey": [35, 39],
+            "Syria": [38, 35], "Jordan": [36, 31], "Israel": [34.9, 31.5], "Lebanon": [35.8, 34],
+            "United Arab Emirates": [54, 24], "Qatar": [51.2, 25.3], "Bahrain": [50.5, 26.1],
+            "Kuwait": [47.5, 29], "Oman": [57, 22], "Yemen": [48, 15], "Egypt": [30, 27],
+            "Afghanistan": [66, 34], "Pakistan": [67, 30]
+        };
+
+        // ==================== 省州中心点 ====================
+        const provinceCenters = {
+            "利雅得省": [48, 24], "麦加省": [41, 19], "麦地那省": [40, 24], "东部省": [51, 26],
+            "阿西尔省": [43, 17], "哈伊勒省": [41, 27],
+            "德黑兰省": [51.5, 35.5], "法尔斯省": [54, 29], "胡齐斯坦省": [49, 30],
+            "克尔曼省": [57, 30], "伊斯法罕省": [52, 32.5], "东阿塞拜疆省": [47, 38], "库尔德斯坦省": [47, 35], "霍拉桑省": [60, 36],
+            "巴格达省": [44.5, 33.5], "巴士拉省": [48, 29], "尼尼微省": [43, 36], "埃尔比勒省": [45, 36.5],
+            "苏莱曼尼亚省": [45.5, 35.5], "卡尔巴拉省": [44, 33.5], "纳杰夫省": [44, 31], "库尔德斯坦省": [44.5, 35.5],
+            "伊斯坦布尔省": [29, 41], "安卡拉省": [33, 39.5], "伊兹密尔省": [27, 38.5], "安塔利亚省": [31, 36.5],
+            "科尼亚省": [33, 37.5], "加济安泰普省": [37.5, 37], "布尔萨省": [29, 40], "阿达纳省": [35.5, 36.5],
+            "开罗省": [31.5, 30], "亚历山大省": [29.5, 31], "塞得港省": [32.3, 31], "西奈半岛省": [34, 30],
+            "阿斯旺省": [33, 23], "卢克索省": [33, 25.5], "曼苏拉省": [31, 31], "苏伊士省": [32.5, 30],
+            "喀布尔省": [69.2, 34.5], "坎大哈省": [65.7, 31.5], "赫拉特省": [62.2, 34.5],
+            "马扎里沙里夫省": [66.9, 36.5], "楠格哈尔省": [70.1, 34.5], "昆都士省": [68.7, 36.5],
+            "巴尔赫省": [64.5, 36.5], "拉什卡尔加省": [62.5, 33.5]
+        };
+
+        // ==================== 地图初始化 ====================
+        const map = L.map('map', {
+            center: [29, 47],
+            zoom: 5,
+            minZoom: 4,
+            maxZoom: 10
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // ==================== 状态管理 ====================
+        let countriesLayer, provincesLayer, countryLabelsLayer, provinceLabelsLayer;
+        let currentMode = 'auto'; // 'auto', 'country', 'province'
+        const AUTO_PROVINCE_ZOOM = 12; // 缩放级别 >= 6 时显示省州
+        let preciseCountriesGeoJSON = null; // 精确国家边界数据
+        let preciseProvincesGeoJSON = null; // 精确省州边界数据
+        let showProvincesGlobal = false; // 用于异步加载后判断当前显示模式
+
+        // ==================== 加载精确边界数据 ====================
+        async function loadBoundaryData() {
+            try {
+                // 加载精确国家边界
+                const countriesResponse = await fetch('./me-countries.geojson');
+                preciseCountriesGeoJSON = await countriesResponse.json();
+                console.log('精确国家边界数据已加载:', preciseCountriesGeoJSON.features.length, '个国家');
+            } catch (error) {
+                console.error('加载国家边界数据失败:', error);
+            }
+
+            try {
+                // 尝试从GitHub加载精确省州边界数据
+                const provincesUrls = [
+                    'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/saudi-arabia/saudi-arabia-provinces.json',
+                    'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+                ];
+
+                for (const url of provincesUrls) {
+                    try {
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        // 检查是否是GeoJSON或TopoJSON
+                        if (data.type === 'FeatureCollection') {
+                            preciseProvincesGeoJSON = data;
+                        } else if (data.type === 'Topology') {
+                            // TopoJSON转换
+                            preciseProvincesGeoJSON = topojsonToGeoJSON(data);
+                        }
+                        if (preciseProvincesGeoJSON) {
+                            console.log('省州边界数据已加载:', preciseProvincesGeoJSON.features.length, '个省份');
+                            break;
+                        }
+                    } catch (e) {
+                        console.warn('从', url, '加载失败');
+                    }
+                }
+            } catch (error) {
+                console.error('加载省州边界数据失败:', error);
+            }
+        }
+
+        // TopoJSON转GeoJSON
+        function topojsonToGeoJSON(topology) {
+            const features = [];
+            for (const key in topology.objects) {
+                const geojson = topojson.feature(topology, topology.objects[key]);
+                if (geojson.features) {
+                    features.push(...geojson.features);
+                } else {
+                    features.push(geojson);
+                }
+            }
+            return { type: 'FeatureCollection', features };
+        }
+
+        // ==================== 创建 Tooltip 内容 ====================
+        function createCountryTooltip(countryName, countryInfo) {
+            const details = countryDetails[countryName];
+            if (!details) {
+                return `<div class="tooltip-title"><span class="flag">${countryInfo.flag}</span>${countryInfo.name}</div>`;
+            }
+            return `
+                <div class="tooltip-title"><span class="flag">${countryInfo.flag}</span>${countryInfo.name}</div>
+                <div class="tooltip-row"><span class="tooltip-label">政权:</span><span class="tooltip-value">${details.regime}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">类型:</span><span class="tooltip-value">${details.regimeType}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">领袖:</span><span class="tooltip-value">${details.leader}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">意识形态:</span><span class="tooltip-value">${details.ideology}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">民族:</span><span class="tooltip-value">${details.ethnicity}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">宗教:</span><span class="tooltip-value">${details.religion}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">人口:</span><span class="tooltip-value">${details.population}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">经济:</span><span class="tooltip-value">${details.economy}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">盟友:</span><span class="tooltip-value">${details.allies || '-'}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">敌对:</span><span class="tooltip-value">${details.enemies || '-'}</span></div>
+            `;
+        }
+
+        function createProvinceTooltip(provinceName, countryName, countryInfo) {
+            const details = provinceDetails[countryName]?.[provinceName];
+            if (!details) {
+                return `<div class="tooltip-title">${provinceName}</div><div class="tooltip-subtitle">${countryInfo.name}</div>`;
+            }
+            return `
+                <div class="tooltip-title"><span class="flag">${countryInfo.flag}</span>${provinceName}</div>
+                <div class="tooltip-subtitle">${countryInfo.name}</div>
+                <div class="tooltip-row"><span class="tooltip-label">政权:</span><span class="tooltip-value">${details.regime}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">类型:</span><span class="tooltip-value">${details.regimeType}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">领袖:</span><span class="tooltip-value">${details.leader}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">意识形态:</span><span class="tooltip-value">${details.ideology}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">民族:</span><span class="tooltip-value">${details.ethnicity}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">宗教:</span><span class="tooltip-value">${details.religion}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">人口:</span><span class="tooltip-value">${details.population}</span></div>
+                <div class="tooltip-row"><span class="tooltip-label">经济:</span><span class="tooltip-value">${details.economy}</span></div>
+            `;
+        }
+
+        // ==================== 创建图层 ====================
+        function createCountriesLayer() {
+            // 优先使用精确边界数据，否则使用嵌入数据
+            const geoJSONData = preciseCountriesGeoJSON || countriesGeoJSON;
+            return L.geoJSON(geoJSONData, {
+                style: (feature) => {
+                    const info = countryData[feature.properties.name];
+                    return {
+                        fillColor: info?.color || '#888',
+                        weight: 2, opacity: 1, color: 'white', fillOpacity: 0.6
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    const name = feature.properties.name;
+                    const info = countryData[name];
+                    if (info) {
+                        layer.bindTooltip(createCountryTooltip(name, info), { sticky: true, className: 'custom-tooltip' });
+                    }
+                    layer.on({
+                        mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#666', fillOpacity: 0.8 }); e.target.bringToFront(); },
+                        mouseout: (e) => { countriesLayer.resetStyle(e.target); }
+                    });
+                }
+            });
+        }
+
+        function createProvincesLayer() {
+            // 优先使用精确边界数据，否则使用嵌入数据
+            const geoJSONData = preciseProvincesGeoJSON || provincesGeoJSON;
+            return L.geoJSON(geoJSONData, {
+                style: (feature) => {
+                    // 尝试从多个可能的属性中获取国家名称
+                    const countryName = feature.properties.country ||
+                        feature.properties.admin ||
+                        feature.properties.NAME_1 ||
+                        feature.properties.name;
+                    const info = countryData[countryName];
+                    return {
+                        fillColor: info?.color || '#888',
+                        weight: 1.5, opacity: 1, color: '#333', dashArray: '4', fillOpacity: 0.75
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    // 尝试从多个可能的属性中获取省份/地区名称和国家名称
+                    const pName = feature.properties.name ||
+                        feature.properties.NAME_2 ||
+                        feature.properties.province ||
+                        feature.properties.ADM2 ||
+                        feature.properties.name;
+                    const cName = feature.properties.country ||
+                        feature.properties.admin ||
+                        feature.properties.NAME_1 ||
+                        feature.properties.name;
+                    const cInfo = countryData[cName];
+                    if (cInfo) {
+                        layer.bindTooltip(createProvinceTooltip(pName, cName, cInfo), { sticky: true, className: 'custom-tooltip' });
+                    }
+                    layer.on({
+                        mouseover: (e) => { e.target.setStyle({ weight: 2.5, color: '#222', fillOpacity: 0.9 }); e.target.bringToFront(); },
+                        mouseout: (e) => { provincesLayer.resetStyle(e.target); }
+                    });
+                }
+            });
+        }
+
+        function createCountryLabels() {
+            return L.layerGroup();
+        }
+
+        function createProvinceLabels() {
+            const group = L.layerGroup();
+            for (const [name, coords] of Object.entries(provinceCenters)) {
+                L.marker(coords, {
+                    icon: L.divIcon({
+                        className: 'province-label-wrapper',
+                        html: `<div class="province-label">${name}</div>`,
+                        iconSize: [70, 18], iconAnchor: [35, 9]
+                    })
+                }).addTo(group);
+            }
+            return group;
+        }
+
+        // ==================== 模式切换 ====================
+        function updateDisplay() {
+            const zoom = map.getZoom();
+            document.getElementById('zoomLevel').textContent = zoom;
+
+            // 移除所有层
+            if (countriesLayer) map.removeLayer(countriesLayer);
+            if (provincesLayer) map.removeLayer(provincesLayer);
+            if (countryLabelsLayer) map.removeLayer(countryLabelsLayer);
+            if (provinceLabelsLayer) map.removeLayer(provinceLabelsLayer);
+
+            let showProvinces = false;
+            let modeText = '显示国家边界';
+
+            if (currentMode === 'auto') {
+                showProvinces = zoom >= AUTO_PROVINCE_ZOOM;
+                modeText = showProvinces ? '自动显示省州边界' : '显示国家边界（放大查看省州）';
+            } else if (currentMode === 'province') {
+                showProvinces = true;
+                modeText = '显示省州边界';
+            } else {
+                modeText = '显示国家边界';
+            }
+
+            showProvincesGlobal = showProvinces;
+            document.getElementById('modeText').textContent = modeText;
+
+            if (showProvinces) {
+                if (!provincesLayer) provincesLayer = createProvincesLayer();
+                if (!provinceLabelsLayer) provinceLabelsLayer = createProvinceLabels();
+                map.addLayer(provincesLayer);
+                map.addLayer(provinceLabelsLayer);
+            } else {
+                if (!countriesLayer) countriesLayer = createCountriesLayer();
+                if (!countryLabelsLayer) countryLabelsLayer = createCountryLabels();
+                map.addLayer(countriesLayer);
+                map.addLayer(countryLabelsLayer);
+            }
+        }
+
+        // ==================== 事件绑定 ====================
+        document.getElementById('modeAuto').addEventListener('click', function () {
+            currentMode = 'auto';
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            updateDisplay();
+        });
+
+        document.getElementById('modeCountry').addEventListener('click', function () {
+            currentMode = 'country';
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            updateDisplay();
+        });
+
+        document.getElementById('modeProvince').addEventListener('click', function () {
+            currentMode = 'province';
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            updateDisplay();
+        });
+
+        map.on('zoomend', updateDisplay);
+
+        // ==================== 图例 ====================
+        const legend = document.getElementById('legend');
+        let legendHTML = '<h4>国家图例</h4>';
+        for (const [, info] of Object.entries(countryData)) {
+            legendHTML += `<div class="legend-item"><div class="legend-color" style="background:${info.color}"></div><span>${info.flag} ${info.name}</span></div>`;
+        }
+        legend.innerHTML = legendHTML;
+
+        // ==================== 初始化 ====================
+        // 先用嵌入数据显示，再异步加载精确数据
+        updateDisplay();
+
+        // 异步加载精确边界数据
+        loadBoundaryData().then(() => {
+            // 重新渲染当前层以使用精确数据
+            if (countriesLayer) {
+                map.removeLayer(countriesLayer);
+                countriesLayer = createCountriesLayer();
+                if (!showProvincesGlobal) map.addLayer(countriesLayer);
+            }
+        });
+    </script>
+</body>
+
+</html>
